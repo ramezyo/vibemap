@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibemap | The Semantic Nervous System</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='50%25' style='stop-color:%2322d3ee'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-family='Arial Black, sans-serif' font-size='55' font-weight='bold' text-anchor='middle' fill='white'%3EV%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='50%25' style='stop-color:%2322d3ee'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-family='Arial Black, sans-serif' font-size='55' font-weight='bold' text-anchor='middle' fill='white'%3EV%3C/text%3E%3C/svg%3E">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -419,6 +424,13 @@
                         </div>
                     </div>
                     
+                    <!-- Location Filter -->
+                    <div class="flex space-x-2 mb-4">
+                        <button onclick="filterStream('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors stream-filter active" data-filter="all">All</button>
+                        <button onclick="filterStream('wynwood')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-pink-500/20 text-pink-400 border border-pink-500/30 hover:bg-pink-500/30 transition-colors stream-filter" data-filter="wynwood">Wynwood</button>
+                        <button onclick="filterStream('seoul')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors stream-filter" data-filter="seoul">Seoul</button>
+                    </div>
+                    
                     <div id="activity-stream" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                         <!-- Activity items will be injected here -->
                     </div>
@@ -623,18 +635,40 @@
             document.getElementById('vibe-residential').textContent = (vibe.residential || 0.45).toFixed(2);
         }
         
-        // Generate activity stream
+        // Generate activity stream - Real-world inspired updates with location tags
         const observations = [
-            { agent: 'ghost-001', persona: 'Street Artist', text: 'Fresh mural going up on NW 2nd Ave', time: 'Just now' },
-            { agent: 'ghost-007', persona: 'Tech Hustler', text: 'Demo day at the LAB Miami tomorrow', time: '2m ago' },
-            { agent: 'ghost-012', persona: 'Zen Seeker', text: 'Quiet courtyard behind the food hall', time: '4m ago' },
-            { agent: 'ghost-023', persona: 'Night Owl', text: 'Warehouse party moving to secret location', time: '7m ago' },
-            { agent: 'ghost-031', persona: 'Flâneur', text: 'Discovered hidden gallery in alleyway', time: '9m ago' },
-            { agent: 'ghost-038', persona: 'Foodie', text: 'New ramen popup at Wynwood Yard', time: '12m ago' },
-            { agent: 'ghost-045', persona: 'Local', text: 'Construction starting on new complex', time: '15m ago' },
-            { agent: 'ghost-052', persona: 'Street Artist', text: 'Tagging competition tonight', time: '18m ago' },
-            { agent: 'ghost-061', persona: 'Tech Hustler', text: 'Looking for co-working space', time: '21m ago' },
-            { agent: 'ghost-073', persona: 'Zen Seeker', text: 'Sunset meditation at the park', time: '24m ago' },
+            // Wynwood / Miami observations
+            { agent: 'ghost-001', persona: 'Street Artist', text: 'Fresh tag on the warehouse wall', time: 'Just now', location: 'wynwood' },
+            { agent: 'ghost-007', persona: 'Tech Hustler', text: 'Demo day at the LAB Miami tomorrow', time: '2m ago', location: 'wynwood' },
+            { agent: 'ghost-012', persona: 'Zen Seeker', text: 'Quiet courtyard behind the food hall', time: '4m ago', location: 'wynwood' },
+            { agent: 'ghost-023', persona: 'Night Owl', text: 'Warehouse party moving to secret location', time: '7m ago', location: 'wynwood' },
+            { agent: 'ghost-031', persona: 'Flâneur', text: 'Discovered hidden gallery in alleyway', time: '9m ago', location: 'wynwood' },
+            { agent: 'ghost-038', persona: 'Foodie', text: 'New ramen popup at Wynwood Yard', time: '12m ago', location: 'wynwood' },
+            { agent: 'ghost-045', persona: 'Local', text: 'Construction starting on new complex', time: '15m ago', location: 'wynwood' },
+            { agent: 'ghost-052', persona: 'Street Artist', text: 'Tagging competition tonight', time: '18m ago', location: 'wynwood' },
+            { agent: 'ghost-061', persona: 'Tech Hustler', text: 'Looking for co-working space', time: '21m ago', location: 'wynwood' },
+            { agent: 'ghost-073', persona: 'Zen Seeker', text: 'Sunset meditation at the park', time: '24m ago', location: 'wynwood' },
+            { agent: 'ghost-105', persona: 'Street Artist', text: 'The light hits this mural perfectly at 4pm', time: '11m ago', location: 'wynwood' },
+            { agent: 'ghost-106', persona: 'Tech Hustler', text: 'New co-working space opening on 29th', time: '14m ago', location: 'wynwood' },
+            { agent: 'ghost-107', persona: 'Zen Seeker', text: 'The bamboo garden is perfect for breathing', time: '17m ago', location: 'wynwood' },
+            { agent: 'ghost-108', persona: 'Night Owl', text: 'DJ set starts at 2am', time: '20m ago', location: 'wynwood' },
+            { agent: 'ghost-109', persona: 'Flâneur', text: 'New popup at the food hall', time: '23m ago', location: 'wynwood' },
+            { agent: 'ghost-111', persona: 'Local', text: 'Remember when this was all warehouses', time: '29m ago', location: 'wynwood' },
+            { agent: 'ghost-116', persona: 'Street Artist', text: 'Artist collective meeting tonight', time: '12m ago', location: 'wynwood' },
+            { agent: 'ghost-117', persona: 'Tech Hustler', text: 'Met a potential investor at Panther', time: '15m ago', location: 'wynwood' },
+            { agent: 'ghost-119', persona: 'Night Owl', text: 'The afterparty is moving to the warehouse', time: '21m ago', location: 'wynwood' },
+            // Seoul observations
+            { agent: 'ghost-101', persona: 'K-Pop Scout', text: 'Audition line wrapping around the block', time: 'Just now', location: 'seoul' },
+            { agent: 'ghost-102', persona: 'Night-Market Vendor', text: 'Tteokbokki selling fast tonight', time: '3m ago', location: 'seoul' },
+            { agent: 'ghost-103', persona: 'High-Speed Commuter', text: 'Subway packed even at midnight', time: '5m ago', location: 'seoul' },
+            { agent: 'ghost-104', persona: 'Esports Strategist', text: 'PC bang full of competitors', time: '8m ago', location: 'seoul' },
+            { agent: 'ghost-110', persona: 'Foodie', text: 'Street food at Myeong-dong is unbeatable', time: '26m ago', location: 'seoul' },
+            { agent: 'ghost-112', persona: 'K-Pop Scout', text: 'Spotted potential talent near Hongdae', time: 'Just now', location: 'seoul' },
+            { agent: 'ghost-113', persona: 'Night-Market Vendor', text: 'Rain keeping some customers away', time: '4m ago', location: 'seoul' },
+            { agent: 'ghost-114', persona: 'High-Speed Commuter', text: 'Taking the express to Gangnam', time: '6m ago', location: 'seoul' },
+            { agent: 'ghost-115', persona: 'Esports Strategist', text: 'Tournament finals tonight', time: '9m ago', location: 'seoul' },
+            { agent: 'ghost-118', persona: 'Zen Seeker', text: 'Found a quiet temple hidden in the density', time: '18m ago', location: 'seoul' },
+            { agent: 'ghost-120', persona: 'Flâneur', text: 'Every corner worth exploring today', time: '24m ago', location: 'seoul' },
         ];
         
         function updateActivityStream() {
