@@ -268,6 +268,113 @@ async def list_anchors(
     ]
 
 
+@app.get("/v1/enterprise/predictive-clusters")
+async def predictive_clusters(
+    lat: float = 25.7997,
+    lon: float = -80.1986,
+    radius: float = 2000,
+    hours: int = 4,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Enterprise Endpoint: Predict High-Energy Social Cluster Formation.
+    
+    Analyzes ghost population movements to forecast where social clusters
+    will form in the next N hours. Returns ranked predictions with
+    confidence scores and formation probabilities.
+    
+    This is the revenue moat — predictive spatial intelligence for:
+    - Seoul World Model integration
+    - Logistics and delivery optimization
+    - Event planning and venue management
+    - Real estate and development
+    """
+    service = VibeService(db)
+    
+    predictions = await service.predict_clusters(
+        GeoPoint(lat=lat, lon=lon),
+        radius_meters=radius,
+        prediction_hours=hours
+    )
+    
+    return {
+        "query_location": {"lat": lat, "lon": lon},
+        "radius_meters": radius,
+        "prediction_horizon_hours": hours,
+        "predicted_clusters": predictions,
+        "generated_at": datetime.utcnow().isoformat(),
+        "model_version": "vibe-predict-v1"
+    }
+
+
+@app.get("/v1/enterprise/training-data")
+async def export_training_data(
+    lat: float = 25.7997,
+    lon: float = -80.1986,
+    radius: float = 5000,
+    samples: int = 1000,
+    format: str = "json",
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Export Training Data for Large Geospatial Models (LGM).
+    
+    Returns vibe-annotated spatial data suitable for training
+    next-generation geospatial AI models.
+    
+    Dataset: LGM-Wynwood-Alpha-v1
+    """
+    service = VibeService(db)
+    
+    training_data = await service.export_training_data(
+        GeoPoint(lat=lat, lon=lon),
+        radius_meters=radius,
+        sample_size=samples
+    )
+    
+    response = {
+        "dataset_label": "Training Data for Large Geospatial Models (LGM) - Wynwood Alpha",
+        "dataset_version": "v1.0.0",
+        "sample_count": len(training_data),
+        "coverage_area": {
+            "center": {"lat": lat, "lon": lon},
+            "radius_meters": radius
+        },
+        "features": [
+            "location_coordinates",
+            "vibe_annotations_social",
+            "vibe_annotations_creative", 
+            "vibe_annotations_commercial",
+            "vibe_annotations_residential",
+            "persona_classification",
+            "sensory_payload",
+            "temporal_features"
+        ],
+        "exported_at": datetime.utcnow().isoformat(),
+        "data": training_data
+    }
+    
+    if format == "csv":
+        # Return CSV format
+        import csv
+        import io
+        
+        output = io.StringIO()
+        if training_data:
+            writer = csv.DictWriter(output, fieldnames=training_data[0].keys())
+            writer.writeheader()
+            writer.writerows(training_data)
+        
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(
+            output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=lgm-wynwood-alpha-v1.csv"}
+        )
+    
+    return response
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

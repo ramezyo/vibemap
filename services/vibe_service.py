@@ -1,6 +1,7 @@
 import math
+import random
 from datetime import datetime, timedelta
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 from uuid import UUID
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -108,6 +109,108 @@ class VibeEngine:
             commercial=round(commercial, 3),
             residential=round(residential, 3)
         ), round(confidence, 3)
+    
+    def predict_cluster_formation(
+        self,
+        checkins: List[AgentCheckin],
+        location: GeoPoint,
+        prediction_hours: int = 4
+    ) -> List[Dict]:
+        """
+        Predict where high-energy social clusters will form.
+        
+        Analyzes ghost population movement patterns to forecast
+        cluster formation locations and intensities.
+        
+        Returns:
+            List of predicted clusters with confidence scores
+        """
+        if not checkins:
+            return []
+        
+        # Group checkins by persona type
+        persona_groups = {}
+        for checkin in checkins:
+            persona = checkin.activity_type or "Unknown"
+            if persona not in persona_groups:
+                persona_groups[persona] = []
+            persona_groups[persona].append(checkin)
+        
+        # Calculate movement vectors for each persona group
+        clusters = []
+        
+        for persona, group_checkins in persona_groups.items():
+            if len(group_checkins) < 3:
+                continue
+            
+            # Sort by time to find trajectory
+            sorted_checkins = sorted(group_checkins, key=lambda x: x.timestamp)
+            
+            # Calculate weighted center of recent activity
+            recent_weight = 0
+            weighted_lat = 0
+            weighted_lon = 0
+            
+            for checkin in sorted_checkins[-10:]:  # Last 10 checkins
+                decay = self.calculate_decay_factor(checkin.timestamp)
+                recent_weight += decay
+                weighted_lat += checkin.lat * decay
+                weighted_lon += checkin.lon * decay
+            
+            if recent_weight > 0:
+                center_lat = weighted_lat / recent_weight
+                center_lon = weighted_lon / recent_weight
+                
+                # Calculate momentum (direction of movement)
+                if len(sorted_checkins) >= 2:
+                    recent = sorted_checkins[-1]
+                    previous = sorted_checkins[-2]
+                    lat_velocity = recent.lat - previous.lat
+                    lon_velocity = recent.lon - previous.lon
+                    
+                    # Predict future location
+                    prediction_factor = prediction_hours / 24  # Scale by time
+                    predicted_lat = center_lat + (lat_velocity * prediction_factor * 10)
+                    predicted_lon = center_lon + (lon_velocity * prediction_factor * 10)
+                else:
+                    predicted_lat = center_lat
+                    predicted_lon = center_lon
+                
+                # Calculate cluster intensity based on persona concentration
+                intensity = min(1.0, len(group_checkins) / 20)
+                
+                # Calculate confidence based on data quality
+                confidence = min(1.0, (len(group_checkins) / 10) * recent_weight)
+                
+                # Determine cluster type based on persona
+                cluster_types = {
+                    'Street Artist': 'Creative Hub',
+                    'Tech Hustler': 'Innovation Cluster',
+                    'Zen Seeker': 'Wellness Zone',
+                    'Night Owl': 'Nightlife District',
+                    'Flâneur': 'Cultural Corridor',
+                    'Foodie': 'Culinary Hotspot',
+                    'Local': 'Community Anchor'
+                }
+                
+                clusters.append({
+                    "predicted_location": {
+                        "lat": round(predicted_lat, 6),
+                        "lon": round(predicted_lon, 6)
+                    },
+                    "cluster_type": cluster_types.get(persona, "Social Node"),
+                    "persona_dominant": persona,
+                    "predicted_intensity": round(intensity, 3),
+                    "confidence": round(confidence, 3),
+                    "prediction_horizon_hours": prediction_hours,
+                    "agent_count": len(group_checkins),
+                    "formation_probability": round(confidence * intensity, 3)
+                })
+        
+        # Sort by formation probability
+        clusters.sort(key=lambda x: x["formation_probability"], reverse=True)
+        
+        return clusters[:5]  # Return top 5 predictions
 
 
 class VibeService:
@@ -276,6 +379,84 @@ class VibeService:
         vibe, confidence = self.engine.aggregate_vibe(checkins, anchors)
         
         return vibe, confidence, anchors, checkins, unique_agents
+    
+    async def predict_clusters(
+        self,
+        location: GeoPoint,
+        radius_meters: float = 2000,
+        prediction_hours: int = 4
+    ) -> List[Dict]:
+        """
+        Enterprise endpoint: Predict high-energy social cluster formation.
+        
+        Analyzes ghost population movements to forecast where clusters
+        will form in the next N hours.
+        """
+        # Get recent checkins in wider area
+        checkins = await self.get_recent_checkins(location, radius_meters, hours=48)
+        
+        # Use prediction engine
+        predictions = self.engine.predict_cluster_formation(
+            checkins, location, prediction_hours
+        )
+        
+        return predictions
+    
+    async def export_training_data(
+        self,
+        location: GeoPoint,
+        radius_meters: float = 5000,
+        sample_size: int = 1000
+    ) -> List[Dict]:
+        """
+        Export vibe-annotated training data for Large Geospatial Models.
+        
+        Returns structured dataset suitable for training LGM models.
+        """
+        since = datetime.utcnow() - timedelta(days=30)
+        
+        result = await self.db.execute(
+            select(AgentCheckin).where(AgentCheckin.timestamp >= since)
+        )
+        all_checkins = result.scalars().all()
+        
+        # Filter by location and sample
+        nearby_checkins = []
+        for checkin in all_checkins:
+            distance = self.engine.haversine_distance(
+                location.lat, location.lon, checkin.lat, checkin.lon
+            )
+            if distance <= radius_meters:
+                nearby_checkins.append(checkin)
+        
+        # Sample if too many
+        if len(nearby_checkins) > sample_size:
+            nearby_checkins = random.sample(nearby_checkins, sample_size)
+        
+        # Format as training data
+        training_data = []
+        for checkin in nearby_checkins:
+            training_data.append({
+                "id": str(checkin.id),
+                "timestamp": checkin.timestamp.isoformat(),
+                "location": {
+                    "lat": checkin.lat,
+                    "lon": checkin.lon
+                },
+                "agent_id": checkin.agent_id,
+                "persona": checkin.activity_type,
+                "vibe_annotations": {
+                    "social": checkin.social_reading,
+                    "creative": checkin.creative_reading,
+                    "commercial": checkin.commercial_reading,
+                    "residential": checkin.residential_reading
+                },
+                "sensory_payload": checkin.sensory_payload,
+                "anchor_id": str(checkin.anchor_id) if checkin.anchor_id else None,
+                "dataset_label": "LGM-Wynwood-Alpha-v1"
+            })
+        
+        return training_data
     
     async def get_stats(self) -> dict:
         """Get system statistics."""
