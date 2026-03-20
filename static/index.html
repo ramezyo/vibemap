@@ -747,7 +747,13 @@
         let observationIndex = 0;
         
         function updateActivityStream() {
+            console.log('updateActivityStream called. Filter:', currentLocationFilter, 'Index:', observationIndex);
             const container = document.getElementById('activity-stream');
+            
+            if (!container) {
+                console.error('ERROR: activity-stream container not found!');
+                return;
+            }
             
             // Filter observations based on current filter
             let filteredObs = shuffledObservations;
@@ -755,8 +761,14 @@
                 filteredObs = shuffledObservations.filter(obs => obs.location === currentLocationFilter);
             }
             
-            // Take first 8 observations
-            const displayObs = filteredObs.slice(0, 8);
+            // Take 8 observations starting from current index
+            const displayObs = [];
+            for (let i = 0; i < 8; i++) {
+                const idx = (observationIndex + i) % filteredObs.length;
+                displayObs.push(filteredObs[idx]);
+            }
+            
+            console.log('Displaying', displayObs.length, 'observations');
             
             container.innerHTML = displayObs.map((obs, index) => {
                 const config = personas[obs.persona];
@@ -785,11 +797,15 @@
                     </div>
                 `;
             }).join('');
+            
+            console.log('Activity stream HTML updated');
         }
         
         // Filter stream by location
         function filterStream(location) {
+            console.log('Filter changed to:', location);
             currentLocationFilter = location;
+            observationIndex = 0; // Reset index when filter changes
             
             // Update button states
             document.querySelectorAll('.stream-filter').forEach(btn => {
@@ -818,62 +834,86 @@
             document.getElementById('latency').textContent = latency + 'ms';
         }
 
-        // Initialize everything
-        console.log('Initializing Vibemap dashboard...');
-        
-        try {
-            createParticles();
-            console.log('Particles created');
-        } catch (e) {
-            console.error('Error creating particles:', e);
-        }
-        
-        try {
-            createAgents();
-            console.log('Agents created');
-        } catch (e) {
-            console.error('Error creating agents:', e);
-        }
-        
-        try {
-            updateActivityStream();
-            console.log('Activity stream initialized');
-        } catch (e) {
-            console.error('Error initializing activity stream:', e);
-        }
-
-        // Set initial API status
-        const apiStatusEl = document.getElementById('api-status');
-        if (apiStatusEl) {
-            apiStatusEl.textContent = 'Connecting...';
-            apiStatusEl.className = 'text-sm font-medium text-yellow-400';
-        }
-
-        // Check API after short delay
-        setTimeout(() => {
-            console.log('Checking API health...');
-            checkApiHealth();
-            fetchVibePulse();
-        }, 500);
-
-        // Start all intervals
-        console.log('Starting intervals...');
-        setInterval(fetchVibePulse, 5000);
-        setInterval(updateUptime, 1000);
-        setInterval(updateLatency, 3000);
-        setInterval(() => {
-            console.log('Rotating stream... Index:', observationIndex);
+        // Stream rotation function
+        function rotateStream() {
+            console.log('Rotating stream... Current index:', observationIndex, 'Total observations:', shuffledObservations.length);
             observationIndex = (observationIndex + 8) % shuffledObservations.length;
             if (observationIndex === 0) {
+                console.log('Reached end of observations, re-shuffling...');
                 shuffledObservations = shuffleArray(observations);
             }
             updateActivityStream();
-        }, 15000);
-        setInterval(() => {
-            createAgents();
-        }, 10000);
+            console.log('Stream rotated. New index:', observationIndex);
+        }
         
-        console.log('Initialization complete');
+        // Initialize everything when DOM is ready
+        function initDashboard() {
+            console.log('Initializing Vibemap dashboard...');
+            
+            // Check if required elements exist
+            const streamContainer = document.getElementById('activity-stream');
+            const apiStatusEl = document.getElementById('api-status');
+            
+            console.log('Stream container found:', !!streamContainer);
+            console.log('API status element found:', !!apiStatusEl);
+            
+            try {
+                createParticles();
+                console.log('Particles created');
+            } catch (e) {
+                console.error('Error creating particles:', e);
+            }
+            
+            try {
+                createAgents();
+                console.log('Agents created');
+            } catch (e) {
+                console.error('Error creating agents:', e);
+            }
+            
+            try {
+                updateActivityStream();
+                console.log('Activity stream initialized with', shuffledObservations.length, 'observations');
+            } catch (e) {
+                console.error('Error initializing activity stream:', e);
+            }
+
+            // Set initial API status
+            if (apiStatusEl) {
+                apiStatusEl.textContent = 'Connecting...';
+                apiStatusEl.className = 'text-sm font-medium text-yellow-400';
+            }
+
+            // Check API after short delay
+            setTimeout(() => {
+                console.log('Checking API health...');
+                checkApiHealth();
+                fetchVibePulse();
+            }, 500);
+
+            // Start all intervals
+            console.log('Starting intervals...');
+            setInterval(fetchVibePulse, 5000);
+            setInterval(updateUptime, 1000);
+            setInterval(updateLatency, 3000);
+            
+            // Stream rotation - every 15 seconds
+            console.log('Starting stream rotation interval (15s)...');
+            setInterval(rotateStream, 15000);
+            
+            setInterval(() => {
+                createAgents();
+            }, 10000);
+            
+            console.log('Initialization complete');
+        }
+        
+        // Run initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDashboard);
+        } else {
+            initDashboard();
+        }
     </script>
 </body>
 </html>
