@@ -120,6 +120,15 @@ async def blog_view():
     raise HTTPException(status_code=404, detail="Blog not found")
 
 
+@app.get("/blog/{post_slug}")
+async def blog_post(post_slug: str):
+    """Individual blog post."""
+    post_file = STATIC_DIR / "blog" / f"{post_slug}.html"
+    if post_file.exists():
+        return FileResponse(post_file)
+    raise HTTPException(status_code=404, detail="Blog post not found")
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health(db: AsyncSession = Depends(get_db)):
     """Health check endpoint."""

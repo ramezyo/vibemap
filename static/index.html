@@ -780,16 +780,6 @@
             updateActivityStream();
         }
         
-        // Rotate observations every 15 seconds
-        setInterval(() => {
-            observationIndex = (observationIndex + 8) % shuffledObservations.length;
-            // Re-shuffle when we've gone through all
-            if (observationIndex === 0) {
-                shuffledObservations = shuffleArray(observations);
-            }
-            updateActivityStream();
-        }, 15000);
-        
         // Update uptime counter
         let seconds = 0;
         function updateUptime() {
@@ -799,33 +789,13 @@
             const secs = (seconds % 60).toString().padStart(2, '0');
             document.getElementById('uptime').textContent = `${hrs}:${mins}:${secs}`;
         }
-        
+
         // Random latency fluctuation
         function updateLatency() {
             const latency = 8 + Math.floor(Math.random() * 20);
             document.getElementById('latency').textContent = latency + 'ms';
         }
-        
-        // Initialize
-        createParticles();
-        createAgents();
-        updateActivityStream();
-        
-        // Set initial status to "Connecting..." then check API
-        document.getElementById('api-status').textContent = 'Connecting...';
-        document.getElementById('api-status').className = 'text-sm font-medium text-yellow-400';
-        
-        // Small delay before first API check to show connecting state
-        setTimeout(() => {
-            checkApiHealth();
-            fetchVibePulse();
-        }, 1000);
-        
-        // Intervals
-        setInterval(fetchVibePulse, 5000);
-        setInterval(updateUptime, 1000);
-        setInterval(updateLatency, 3000);
-        
+
         // Animate agents periodically
         setInterval(() => {
             createAgents();
