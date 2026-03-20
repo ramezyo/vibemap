@@ -585,7 +585,9 @@
         
         // Fetch vibe pulse
         async function fetchVibePulse() {
+            console.log('fetchVibePulse called');
             try {
+                console.log('Fetching vibe pulse from:', `${API_BASE}/v1/vibe-pulse`);
                 const response = await fetch(`${API_BASE}/v1/vibe-pulse`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -595,17 +597,26 @@
                     })
                 });
                 
-                if (!response.ok) throw new Error('API Error');
+                console.log('Vibe pulse response status:', response.status);
+                
+                if (!response.ok) throw new Error('API Error: ' + response.status);
                 
                 const data = await response.json();
+                console.log('Vibe pulse data received:', data);
                 updateDashboard(data);
-                document.getElementById('api-status').textContent = 'Connected';
-                document.getElementById('api-status').className = 'text-sm font-medium text-green-400';
+                const statusEl = document.getElementById('api-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Connected';
+                    statusEl.className = 'text-sm font-medium text-green-400';
+                }
                 
             } catch (error) {
-                console.error('API Error:', error);
-                document.getElementById('api-status').textContent = 'Demo Mode';
-                document.getElementById('api-status').className = 'text-sm font-medium text-yellow-400';
+                console.error('API Error in fetchVibePulse:', error.message);
+                const statusEl = document.getElementById('api-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Demo Mode';
+                    statusEl.className = 'text-sm font-medium text-yellow-400';
+                }
                 // Use demo data
                 updateDashboard(getDemoData());
             }
@@ -613,27 +624,38 @@
         
         // Check API health on load
         async function checkApiHealth() {
+            console.log('checkApiHealth called');
             try {
+                console.log('Fetching from:', `${API_BASE}/health`);
                 const response = await fetch(`${API_BASE}/health`, { 
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
                 
+                console.log('Health response status:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Health data:', data);
                     if (data.status === 'healthy') {
-                        document.getElementById('api-status').textContent = 'Connected';
-                        document.getElementById('api-status').className = 'text-sm font-medium text-green-400';
+                        const statusEl = document.getElementById('api-status');
+                        if (statusEl) {
+                            statusEl.textContent = 'Connected';
+                            statusEl.className = 'text-sm font-medium text-green-400';
+                        }
                     } else {
                         throw new Error('API not healthy');
                     }
                 } else {
-                    throw new Error('Health check failed');
+                    throw new Error('Health check failed with status: ' + response.status);
                 }
             } catch (error) {
-                console.log('API health check failed, using demo mode');
-                document.getElementById('api-status').textContent = 'Demo Mode';
-                document.getElementById('api-status').className = 'text-sm font-medium text-yellow-400';
+                console.error('API health check failed:', error.message);
+                const statusEl = document.getElementById('api-status');
+                if (statusEl) {
+                    statusEl.textContent = 'Demo Mode';
+                    statusEl.className = 'text-sm font-medium text-yellow-400';
+                }
             }
         }
         
@@ -797,9 +819,28 @@
         }
 
         // Initialize everything
-        createParticles();
-        createAgents();
-        updateActivityStream();
+        console.log('Initializing Vibemap dashboard...');
+        
+        try {
+            createParticles();
+            console.log('Particles created');
+        } catch (e) {
+            console.error('Error creating particles:', e);
+        }
+        
+        try {
+            createAgents();
+            console.log('Agents created');
+        } catch (e) {
+            console.error('Error creating agents:', e);
+        }
+        
+        try {
+            updateActivityStream();
+            console.log('Activity stream initialized');
+        } catch (e) {
+            console.error('Error initializing activity stream:', e);
+        }
 
         // Set initial API status
         const apiStatusEl = document.getElementById('api-status');
@@ -810,15 +851,18 @@
 
         // Check API after short delay
         setTimeout(() => {
+            console.log('Checking API health...');
             checkApiHealth();
             fetchVibePulse();
         }, 500);
 
         // Start all intervals
+        console.log('Starting intervals...');
         setInterval(fetchVibePulse, 5000);
         setInterval(updateUptime, 1000);
         setInterval(updateLatency, 3000);
         setInterval(() => {
+            console.log('Rotating stream... Index:', observationIndex);
             observationIndex = (observationIndex + 8) % shuffledObservations.length;
             if (observationIndex === 0) {
                 shuffledObservations = shuffleArray(observations);
@@ -828,6 +872,8 @@
         setInterval(() => {
             createAgents();
         }, 10000);
+        
+        console.log('Initialization complete');
     </script>
 </body>
 </html>
