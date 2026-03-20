@@ -64,6 +64,14 @@ app.add_middleware(
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# Generate and save interactive map
+from components.map_component import get_map_html
+map_html = get_map_html()
+map_file = STATIC_DIR / "map.html"
+with open(map_file, "w") as f:
+    f.write(map_html)
+print(f"🗺️  Interactive map generated: {map_file}")
+
 
 @app.get("/", response_model=dict)
 async def root():
@@ -76,12 +84,22 @@ async def root():
         "version": settings.app_version,
         "description": "Semantic Nervous System for the Agentic Era",
         "docs": "/docs",
+        "map": "/map",
         "genesis_anchor": {
             "name": settings.genesis_name,
             "lat": settings.genesis_lat,
             "lon": settings.genesis_lon
         }
     }
+
+
+@app.get("/map")
+async def map_view():
+    """Interactive map view."""
+    map_file = STATIC_DIR / "map.html"
+    if map_file.exists():
+        return FileResponse(map_file)
+    raise HTTPException(status_code=404, detail="Map not found")
 
 
 @app.get("/health", response_model=HealthResponse)
