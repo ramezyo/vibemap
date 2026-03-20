@@ -591,10 +591,36 @@
                 
             } catch (error) {
                 console.error('API Error:', error);
-                document.getElementById('api-status').textContent = 'Offline';
-                document.getElementById('api-status').className = 'text-sm font-medium text-red-400';
+                document.getElementById('api-status').textContent = 'Demo Mode';
+                document.getElementById('api-status').className = 'text-sm font-medium text-yellow-400';
                 // Use demo data
                 updateDashboard(getDemoData());
+            }
+        }
+        
+        // Check API health on load
+        async function checkApiHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`, { 
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'healthy') {
+                        document.getElementById('api-status').textContent = 'Connected';
+                        document.getElementById('api-status').className = 'text-sm font-medium text-green-400';
+                    } else {
+                        throw new Error('API not healthy');
+                    }
+                } else {
+                    throw new Error('Health check failed');
+                }
+            } catch (error) {
+                console.log('API health check failed, using demo mode');
+                document.getElementById('api-status').textContent = 'Demo Mode';
+                document.getElementById('api-status').className = 'text-sm font-medium text-yellow-400';
             }
         }
         
@@ -715,6 +741,7 @@
         createParticles();
         createAgents();
         updateActivityStream();
+        checkApiHealth();  // Check health first
         fetchVibePulse();
         
         // Intervals

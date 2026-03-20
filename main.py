@@ -102,6 +102,15 @@ async def map_view():
     raise HTTPException(status_code=404, detail="Map not found")
 
 
+@app.get("/join")
+async def join_view():
+    """Agent onboarding page."""
+    join_file = STATIC_DIR / "join.html"
+    if join_file.exists():
+        return FileResponse(join_file)
+    raise HTTPException(status_code=404, detail="Join page not found")
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health(db: AsyncSession = Depends(get_db)):
     """Health check endpoint."""
