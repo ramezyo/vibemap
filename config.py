@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     vibe_decay_hours: float = 24.0  # How fast vibe energy decays
     vibe_radius_meters: float = 500.0  # Radius for vibe aggregation
     
+    # API Keys for real-time data
+    openweather_api_key: str = ""  # OpenWeatherMap API key
+    twitter_bearer_token: str = ""  # Twitter/X API bearer token
+    google_places_api_key: str = ""  # Google Places API key
+    
     class Config:
         env_file = ".env"
         env_prefix = ""

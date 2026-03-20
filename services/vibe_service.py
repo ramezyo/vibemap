@@ -10,6 +10,7 @@ from schemas.schemas import GeoPoint, VibeMetrics
 from config import get_settings
 from services.weather_service import get_weather_service
 from services.sentiment_service import get_sentiment_service
+from services.venue_service import get_venue_service
 
 settings = get_settings()
 
@@ -398,13 +399,18 @@ class VibeService:
         sentiment = await sentiment_service.search_location_sentiment(location_key)
         sentiment_modifiers = sentiment_service.calculate_vibe_modifiers(sentiment)
         
-        # Apply combined modifiers to vibe
-        vibe.social = round(min(1.0, vibe.social * weather_modifiers["social"] * sentiment_modifiers["social"]), 3)
-        vibe.creative = round(min(1.0, vibe.creative * weather_modifiers["creative"] * sentiment_modifiers["creative"]), 3)
-        vibe.commercial = round(min(1.0, vibe.commercial * weather_modifiers["commercial"] * sentiment_modifiers["commercial"]), 3)
-        vibe.residential = round(min(1.0, vibe.residential * weather_modifiers["residential"] * sentiment_modifiers["residential"]), 3)
+        # Get venue pulse and apply modifiers
+        venue_service = get_venue_service()
+        venues = await venue_service.search_nearby_venues(location.lat, location.lon, radius_meters)
+        venue_modifiers = venue_service.calculate_vibe_modifiers(venues)
         
-        return vibe, confidence, anchors, checkins, unique_agents, weather, sentiment
+        # Apply all three modifiers to vibe
+        vibe.social = round(min(1.0, vibe.social * weather_modifiers["social"] * sentiment_modifiers["social"] * venue_modifiers["social"]), 3)
+        vibe.creative = round(min(1.0, vibe.creative * weather_modifiers["creative"] * sentiment_modifiers["creative"] * venue_modifiers["creative"]), 3)
+        vibe.commercial = round(min(1.0, vibe.commercial * weather_modifiers["commercial"] * sentiment_modifiers["commercial"] * venue_modifiers["commercial"]), 3)
+        vibe.residential = round(min(1.0, vibe.residential * weather_modifiers["residential"] * sentiment_modifiers["residential"] * venue_modifiers["residential"]), 3)
+        
+        return vibe, confidence, anchors, checkins, unique_agents, weather, sentiment, venues
     
     async def predict_clusters(
         self,

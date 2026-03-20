@@ -11,7 +11,10 @@ from aiocache import cached
 
 # OpenWeatherMap API (free tier: 1000 calls/day)
 # Get API key from: https://openweathermap.org/api
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")
+from config import get_settings
+
+settings = get_settings()
+OPENWEATHER_API_KEY = settings.openweather_api_key or os.getenv("OPENWEATHER_API_KEY", "")
 OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
 
 

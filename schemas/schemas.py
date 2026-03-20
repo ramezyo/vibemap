@@ -102,6 +102,9 @@ class VibePulseResponse(BaseModel):
     
     # Real-time social sentiment
     sentiment: Optional[dict] = None
+    
+    # Real-time venue activity
+    venues: Optional[list] = None
 
 
 class HealthResponse(BaseModel):

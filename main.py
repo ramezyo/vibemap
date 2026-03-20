@@ -112,7 +112,7 @@ async def vibe_pulse(
     """
     service = VibeService(db)
     
-    vibe, confidence, anchors, checkins, unique_agents, weather, sentiment = await service.calculate_vibe_pulse(
+    vibe, confidence, anchors, checkins, unique_agents, weather, sentiment, venues = await service.calculate_vibe_pulse(
         request.location,
         request.radius_meters
     )
@@ -158,7 +158,8 @@ async def vibe_pulse(
         unique_agents=unique_agents,
         vibe_trend=vibe_trend,
         weather=weather,
-        sentiment=sentiment
+        sentiment=sentiment,
+        venues=venues
     )
 
 
