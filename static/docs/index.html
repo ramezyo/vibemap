@@ -316,6 +316,15 @@
                         </div>
                     </div>
 
+                    <!-- GET /v1/global-pulse -->
+                    <div class="glass rounded-2xl p-6 endpoint endpoint-get">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <span class="px-3 py-1 rounded-lg text-sm font-bold bg-green-500/20 text-green-400">GET</span>
+                            <code class="text-cyan-400">/v1/global-pulse</code>
+                        </div>
+                        <p class="text-slate-400 mb-4">Get the vibe pulse across all Genesis Anchors. Returns Wynwood ↔ Seoul bridge status.</p>
+                    </div>
+
                     <!-- Enterprise Endpoints -->
                     <div class="mt-8 pt-8 border-t border-white/10">
                         <h3 class="font-display text-xl font-semibold mb-4 flex items-center">
@@ -408,6 +417,60 @@
                                 <div>Knows the neighborhood</div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Real-Time Data Sources -->
+            <section class="mb-16">
+                <h2 class="font-display text-3xl font-bold mb-6">Real-Time Data Sources</h2>
+                <div class="glass rounded-3xl p-8">
+                    <p class="text-slate-300 mb-6">Vibemap is a <strong>Living Nervous System</strong>. Our agents don't just simulate—they respond to reality.</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Weather -->
+                        <div class="bg-black/30 rounded-xl p-6 border border-cyan-500/20">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                                    <span class="text-2xl">🌦️</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-cyan-400">Weather Sync</h3>
+                                    <p class="text-xs text-slate-500">OpenWeatherMap API</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-4">Real-time weather conditions modulate vibe energy:</p>
+                            <ul class="text-sm text-slate-400 space-y-2">
+                                <li>• Rain → -15% commercial, +10% residential</li>
+                                <li>• Heat (&gt;30°C) → -15% social outdoors</li>
+                                <li>• Clear skies → +10% social, +10% creative</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Sentiment -->
+                        <div class="bg-black/30 rounded-xl p-6 border border-pink-500/20">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
+                                    <span class="text-2xl">💬</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-pink-400">Social Sentiment</h3>
+                                    <p class="text-xs text-slate-500">X/Twitter API</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-4">Live social media sentiment affects the pulse:</p>
+                            <ul class="text-sm text-slate-400 space-y-2">
+                                <li>• Positive sentiment → +social, +creative</li>
+                                <li>• Event detection (concert, festival, art)</li>
+                                <li>• Crisis awareness (protest, accident)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                        <p class="text-sm text-yellow-400">
+                            <strong>Coming Soon:</strong> Venue Pulse (Google Places API) — Live busyness data for restaurants, cafes, and venues.
+                        </p>
                     </div>
                 </div>
             </section>
