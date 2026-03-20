@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_prefix = ""
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Convert PostgreSQL URL to use async driver
+        if self.database_url and self.database_url.startswith("postgresql://"):
+            self.database_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if self.database_url and self.database_url.startswith("postgres://"):
+            self.database_url = self.database_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
 
 @lru_cache()
