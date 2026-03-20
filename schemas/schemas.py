@@ -99,6 +99,9 @@ class VibePulseResponse(BaseModel):
     
     # Real-time weather data
     weather: Optional[dict] = None
+    
+    # Real-time social sentiment
+    sentiment: Optional[dict] = None
 
 
 class HealthResponse(BaseModel):

@@ -9,6 +9,7 @@ from models.models import VibeAnchor, AgentCheckin, VibePulse
 from schemas.schemas import GeoPoint, VibeMetrics
 from config import get_settings
 from services.weather_service import get_weather_service
+from services.sentiment_service import get_sentiment_service
 
 settings = get_settings()
 
@@ -384,13 +385,26 @@ class VibeService:
         weather = await weather_service.get_current_weather(location.lat, location.lon)
         weather_modifiers = weather_service.calculate_vibe_modifiers(weather)
         
-        # Apply weather modifiers to vibe
-        vibe.social = round(min(1.0, vibe.social * weather_modifiers["social"]), 3)
-        vibe.creative = round(min(1.0, vibe.creative * weather_modifiers["creative"]), 3)
-        vibe.commercial = round(min(1.0, vibe.commercial * weather_modifiers["commercial"]), 3)
-        vibe.residential = round(min(1.0, vibe.residential * weather_modifiers["residential"]), 3)
+        # Get sentiment and apply modifiers
+        sentiment_service = get_sentiment_service()
+        # Determine location key based on coordinates
+        if 25.0 < location.lat < 26.0 and -81.0 < location.lon < -80.0:
+            location_key = "wynwood"
+        elif 37.0 < location.lat < 38.0 and 126.0 < location.lon < 128.0:
+            location_key = "seoul"
+        else:
+            location_key = "miami"
         
-        return vibe, confidence, anchors, checkins, unique_agents, weather
+        sentiment = await sentiment_service.search_location_sentiment(location_key)
+        sentiment_modifiers = sentiment_service.calculate_vibe_modifiers(sentiment)
+        
+        # Apply combined modifiers to vibe
+        vibe.social = round(min(1.0, vibe.social * weather_modifiers["social"] * sentiment_modifiers["social"]), 3)
+        vibe.creative = round(min(1.0, vibe.creative * weather_modifiers["creative"] * sentiment_modifiers["creative"]), 3)
+        vibe.commercial = round(min(1.0, vibe.commercial * weather_modifiers["commercial"] * sentiment_modifiers["commercial"]), 3)
+        vibe.residential = round(min(1.0, vibe.residential * weather_modifiers["residential"] * sentiment_modifiers["residential"]), 3)
+        
+        return vibe, confidence, anchors, checkins, unique_agents, weather, sentiment
     
     async def predict_clusters(
         self,
