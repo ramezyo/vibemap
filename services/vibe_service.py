@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.models import VibeAnchor, AgentCheckin, VibePulse
 from schemas.schemas import GeoPoint, VibeMetrics
 from config import get_settings
+from services.weather_service import get_weather_service
 
 settings = get_settings()
 
@@ -359,12 +360,12 @@ class VibeService:
         self,
         location: GeoPoint,
         radius_meters: float = 500
-    ) -> Tuple[VibeMetrics, float, List[VibeAnchor], List[AgentCheckin], int]:
+    ) -> Tuple[VibeMetrics, float, List[VibeAnchor], List[AgentCheckin], int, Dict]:
         """
         Calculate the vibe pulse at a location.
         
         Returns:
-            Tuple of (vibe_metrics, confidence, anchors, checkins, unique_agent_count)
+            Tuple of (vibe_metrics, confidence, anchors, checkins, unique_agent_count, weather_data)
         """
         # Get nearby anchors
         anchors = await self.find_nearest_anchors(location, radius_meters)
@@ -378,7 +379,18 @@ class VibeService:
         # Calculate vibe
         vibe, confidence = self.engine.aggregate_vibe(checkins, anchors)
         
-        return vibe, confidence, anchors, checkins, unique_agents
+        # Get weather and apply modifiers
+        weather_service = get_weather_service()
+        weather = await weather_service.get_current_weather(location.lat, location.lon)
+        weather_modifiers = weather_service.calculate_vibe_modifiers(weather)
+        
+        # Apply weather modifiers to vibe
+        vibe.social = round(min(1.0, vibe.social * weather_modifiers["social"]), 3)
+        vibe.creative = round(min(1.0, vibe.creative * weather_modifiers["creative"]), 3)
+        vibe.commercial = round(min(1.0, vibe.commercial * weather_modifiers["commercial"]), 3)
+        vibe.residential = round(min(1.0, vibe.residential * weather_modifiers["residential"]), 3)
+        
+        return vibe, confidence, anchors, checkins, unique_agents, weather
     
     async def predict_clusters(
         self,

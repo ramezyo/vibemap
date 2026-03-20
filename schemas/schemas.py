@@ -96,6 +96,9 @@ class VibePulseResponse(BaseModel):
     
     # Historical trend (if requested)
     vibe_trend: Optional[List[dict]] = None
+    
+    # Real-time weather data
+    weather: Optional[dict] = None
 
 
 class HealthResponse(BaseModel):
