@@ -796,7 +796,35 @@
             document.getElementById('latency').textContent = latency + 'ms';
         }
 
-        // Animate agents periodically
+        // Initialize everything
+        createParticles();
+        createAgents();
+        updateActivityStream();
+
+        // Set initial API status
+        const apiStatusEl = document.getElementById('api-status');
+        if (apiStatusEl) {
+            apiStatusEl.textContent = 'Connecting...';
+            apiStatusEl.className = 'text-sm font-medium text-yellow-400';
+        }
+
+        // Check API after short delay
+        setTimeout(() => {
+            checkApiHealth();
+            fetchVibePulse();
+        }, 500);
+
+        // Start all intervals
+        setInterval(fetchVibePulse, 5000);
+        setInterval(updateUptime, 1000);
+        setInterval(updateLatency, 3000);
+        setInterval(() => {
+            observationIndex = (observationIndex + 8) % shuffledObservations.length;
+            if (observationIndex === 0) {
+                shuffledObservations = shuffleArray(observations);
+            }
+            updateActivityStream();
+        }, 15000);
         setInterval(() => {
             createAgents();
         }, 10000);
