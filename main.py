@@ -28,11 +28,14 @@ async def lifespan(app: FastAPI):
     # Startup
     await init_db()
     
-    # Initialize genesis anchor
+    # Initialize genesis anchor and seoul anchor
     async for db in get_db():
         service = VibeService(db)
         genesis = await service.create_genesis_anchor()
         print(f"🌟 Genesis Anchor initialized: {genesis.name} at ({genesis.lat}, {genesis.lon})")
+        
+        seoul = await service.create_seoul_anchor()
+        print(f"🇰🇷 Seoul Anchor initialized: {seoul.name} at ({seoul.lat}, {seoul.lon})")
         break
     
     yield
@@ -373,6 +376,27 @@ async def export_training_data(
         )
     
     return response
+
+
+@app.get("/v1/global-pulse")
+async def global_pulse(db: AsyncSession = Depends(get_db)):
+    """
+    Global Pulse: Get vibe across all Genesis Anchors.
+    
+    Returns the state of the entire Vibemap network,
+    bridging Wynwood ↔ Seoul and future anchors.
+    """
+    service = VibeService(db)
+    
+    global_data = await service.get_global_pulse()
+    
+    return {
+        "network_status": "global_bridge_active" if global_data["global_bridge_active"] else "single_anchor",
+        "anchors": global_data["anchors"],
+        "total_anchors": global_data["total_anchors"],
+        "bridge_cities": ["Wynwood, Miami", "Seoul, South Korea"],
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 
 if __name__ == "__main__":

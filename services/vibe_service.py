@@ -458,6 +458,72 @@ class VibeService:
         
         return training_data
     
+    async def create_seoul_anchor(self) -> VibeAnchor:
+        """Initialize the Seoul Anchor - Anchor #2 for SWM integration."""
+        seoul_name = "Seoul Anchor - Myeong-dong/Gangnam"
+        
+        # Check if seoul anchor exists
+        result = await self.db.execute(
+            select(VibeAnchor).where(VibeAnchor.name == seoul_name)
+        )
+        existing = result.scalar_one_or_none()
+        
+        if existing:
+            return existing
+        
+        # Create seoul anchor
+        seoul = VibeAnchor(
+            name=seoul_name,
+            description="The Seoul World Model integration anchor - high-density K-culture hub",
+            lat=37.5665,
+            lon=126.9780,
+            social_energy=0.85,  # High social density
+            creative_energy=0.75,  # K-creative industries
+            commercial_energy=0.95,  # Gangnam shopping district
+            residential_energy=0.60,
+            properties={
+                "type": "expansion",
+                "city": "Seoul",
+                "neighborhood": "Myeong-dong/Gangnam",
+                "significance": "Anchor #2 - Seoul World Model integration",
+                "swm_compatible": True,
+                "focus": "high_density_transit_verticality"
+            }
+        )
+        
+        self.db.add(seoul)
+        await self.db.commit()
+        await self.db.refresh(seoul)
+        
+        return seoul
+    
+    async def get_global_pulse(self) -> Dict:
+        """Get pulse across all Genesis Anchors."""
+        result = await self.db.execute(select(VibeAnchor))
+        all_anchors = result.scalars().all()
+        
+        anchors_data = []
+        for anchor in all_anchors:
+            anchors_data.append({
+                "id": str(anchor.id),
+                "name": anchor.name,
+                "location": {"lat": anchor.lat, "lon": anchor.lon},
+                "vibe": {
+                    "social": anchor.social_energy,
+                    "creative": anchor.creative_energy,
+                    "commercial": anchor.commercial_energy,
+                    "residential": anchor.residential_energy
+                },
+                "checkin_count": anchor.checkin_count,
+                "properties": anchor.properties
+            })
+        
+        return {
+            "anchors": anchors_data,
+            "total_anchors": len(anchors_data),
+            "global_bridge_active": len(anchors_data) >= 2
+        }
+    
     async def get_stats(self) -> dict:
         """Get system statistics."""
         anchor_count = await self.db.execute(select(func.count(VibeAnchor.id)))
@@ -469,6 +535,12 @@ class VibeService:
         )
         genesis = genesis_result.scalar_one_or_none()
         
+        # Check for seoul anchor
+        seoul_result = await self.db.execute(
+            select(VibeAnchor).where(VibeAnchor.name == "Seoul Anchor - Myeong-dong/Gangnam")
+        )
+        seoul = seoul_result.scalar_one_or_none()
+        
         return {
             "total_anchors": anchor_count.scalar(),
             "total_checkins": checkin_count.scalar(),
@@ -476,5 +548,11 @@ class VibeService:
             "genesis_location": {
                 "lat": settings.genesis_lat,
                 "lon": settings.genesis_lon
-            } if genesis else None
+            } if genesis else None,
+            "seoul_anchor_active": seoul is not None,
+            "seoul_location": {
+                "lat": 37.5665,
+                "lon": 126.9780
+            } if seoul else None,
+            "global_network_status": "active" if (genesis and seoul) else "single_anchor"
         }
