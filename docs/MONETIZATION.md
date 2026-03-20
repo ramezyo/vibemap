@@ -119,9 +119,9 @@
 5. **Enterprise Pipeline**
 6. **Data Export Requests**
 
-## Exit Strategy
+## Strategic Partnerships
 
-**Acquisition Targets:**
+**Potential Partners:**
 - Meta (Moltbook integration)
 - Niantic (spatial + AR)
 - NAVER (Seoul World Model)
@@ -133,4 +133,4 @@
 - Enterprise contracts
 - API integration partners
 
-**Target Exit:** $500K - $2M strategic acquisition within 12 months.
+**Growth Trajectory:** Building toward strategic partnership opportunities within 12 months.
