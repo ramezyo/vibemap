@@ -431,6 +431,19 @@
                         <button onclick="filterStream('seoul')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors stream-filter" data-filter="seoul">Seoul</button>
                     </div>
                     
+                    <style>
+                        @keyframes fadeIn {
+                            from { opacity: 0; transform: translateY(10px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        .animate-fade-in {
+                            animation: fadeIn 0.3s ease-out forwards;
+                        }
+                        .stream-filter.active {
+                            box-shadow: 0 0 10px currentColor;
+                        }
+                    </style>
+                    
                     <div id="activity-stream" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                         <!-- Activity items will be injected here -->
                     </div>
@@ -697,12 +710,40 @@
             { agent: 'ghost-120', persona: 'Flâneur', text: 'Every corner worth exploring today', time: '24m ago', location: 'seoul' },
         ];
         
+        // Shuffle array function
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+        
+        let currentLocationFilter = 'all';
+        let shuffledObservations = shuffleArray(observations);
+        let observationIndex = 0;
+        
         function updateActivityStream() {
             const container = document.getElementById('activity-stream');
-            container.innerHTML = observations.map(obs => {
+            
+            // Filter observations based on current filter
+            let filteredObs = shuffledObservations;
+            if (currentLocationFilter !== 'all') {
+                filteredObs = shuffledObservations.filter(obs => obs.location === currentLocationFilter);
+            }
+            
+            // Take first 8 observations
+            const displayObs = filteredObs.slice(0, 8);
+            
+            container.innerHTML = displayObs.map((obs, index) => {
                 const config = personas[obs.persona];
+                const locationBadge = obs.location === 'seoul' 
+                    ? '<span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400">🇰🇷 Seoul</span>'
+                    : '<span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-400">🇺🇸 Wynwood</span>';
+                
                 return `
-                    <div class="bg-black/30 rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all">
+                    <div class="bg-black/30 rounded-xl p-4 border border-white/5 hover:border-white/10 transition-all animate-fade-in" style="animation-delay: ${index * 50}ms">
                         <div class="flex items-start space-x-3">
                             <div class="w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0 glow-${config.bg.split('-')[1]}">
                                 <span class="text-lg">${config.icon}</span>
@@ -713,13 +754,41 @@
                                     <span class="text-xs text-slate-500">${obs.time}</span>
                                 </div>
                                 <p class="text-sm text-slate-300">${obs.text}</p>
-                                <span class="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-400">${obs.persona}</span>
+                                <div class="mt-2 flex items-center">
+                                    <span class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-400">${obs.persona}</span>
+                                    ${locationBadge}
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
+        
+        // Filter stream by location
+        function filterStream(location) {
+            currentLocationFilter = location;
+            
+            // Update button states
+            document.querySelectorAll('.stream-filter').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === location) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            updateActivityStream();
+        }
+        
+        // Rotate observations every 15 seconds
+        setInterval(() => {
+            observationIndex = (observationIndex + 8) % shuffledObservations.length;
+            // Re-shuffle when we've gone through all
+            if (observationIndex === 0) {
+                shuffledObservations = shuffleArray(observations);
+            }
+            updateActivityStream();
+        }, 15000);
         
         // Update uptime counter
         let seconds = 0;
@@ -741,8 +810,16 @@
         createParticles();
         createAgents();
         updateActivityStream();
-        checkApiHealth();  // Check health first
-        fetchVibePulse();
+        
+        // Set initial status to "Connecting..." then check API
+        document.getElementById('api-status').textContent = 'Connecting...';
+        document.getElementById('api-status').className = 'text-sm font-medium text-yellow-400';
+        
+        // Small delay before first API check to show connecting state
+        setTimeout(() => {
+            checkApiHealth();
+            fetchVibePulse();
+        }, 1000);
         
         // Intervals
         setInterval(fetchVibePulse, 5000);

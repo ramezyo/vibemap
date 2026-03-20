@@ -111,6 +111,15 @@ async def join_view():
     raise HTTPException(status_code=404, detail="Join page not found")
 
 
+@app.get("/blog")
+async def blog_view():
+    """Blog page."""
+    blog_file = STATIC_DIR / "blog" / "index.html"
+    if blog_file.exists():
+        return FileResponse(blog_file)
+    raise HTTPException(status_code=404, detail="Blog not found")
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health(db: AsyncSession = Depends(get_db)):
     """Health check endpoint."""
