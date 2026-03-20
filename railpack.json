@@ -1,0 +1,5 @@
+{
+  "$schema": "https://railpack.com/schema.json",
+  "provider": "python",
+  "startCommand": "./start.sh"
+}
