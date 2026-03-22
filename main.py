@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -6,6 +6,9 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from config import get_settings
 from db.database import init_db, get_db
@@ -44,20 +47,40 @@ async def lifespan(app: FastAPI):
     print("Vibemap shutting down...")
 
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="Semantic Nervous System for the Agentic Era",
     lifespan=lifespan
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS middleware
+# CORS middleware - restrict to known origins
+# Production domains + local development (only when DEBUG=true)
+origins = [
+    "https://vibemap.live",
+    "https://www.vibemap.live",
+]
+
+# Allow localhost in development only
+if settings.debug:
+    origins.extend([
+        "http://localhost:8000",
+        "http://localhost:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:3000",
+    ])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
 
 # Serve static files
@@ -130,7 +153,8 @@ async def blog_post(post_slug: str):
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health(db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def health(request: Request, db: AsyncSession = Depends(get_db)):
     """Health check endpoint."""
     service = VibeService(db)
     stats = await service.get_stats()
@@ -145,8 +169,10 @@ async def health(db: AsyncSession = Depends(get_db)):
 
 
 @app.post("/v1/vibe-pulse", response_model=VibePulseResponse)
+@limiter.limit("100/minute")
 async def vibe_pulse(
-    request: VibePulseRequest,
+    request: Request,
+    body: VibePulseRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -158,8 +184,8 @@ async def vibe_pulse(
     service = VibeService(db)
     
     vibe, confidence, anchors, checkins, unique_agents, weather, sentiment, venues = await service.calculate_vibe_pulse(
-        request.location,
-        request.radius_meters
+        body.location,
+        body.radius_meters
     )
     
     # Convert anchors to response format
@@ -185,16 +211,16 @@ async def vibe_pulse(
     
     # Build trend data if requested
     vibe_trend = None
-    if request.include_history:
+    if body.include_history:
         # Simplified trend - in production, query vibe_pulses table
         vibe_trend = [
             {"hour": i, "social": vibe.social * (0.8 + 0.4 * (i % 3) / 3)}
-            for i in range(min(request.history_hours, 24))
+            for i in range(min(body.history_hours, 24))
         ]
     
     return VibePulseResponse(
-        location=request.location,
-        radius_meters=request.radius_meters,
+        location=body.location,
+        radius_meters=body.radius_meters,
         timestamp=datetime.utcnow(),
         vibe=vibe,
         confidence=confidence,
@@ -209,8 +235,10 @@ async def vibe_pulse(
 
 
 @app.post("/v1/agent-checkin", response_model=AgentCheckinResponse)
+@limiter.limit("60/minute")
 async def agent_checkin(
-    request: AgentCheckinRequest,
+    request: Request,
+    body: AgentCheckinRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -223,25 +251,25 @@ async def agent_checkin(
     
     # Extract readings
     readings = {
-        "social": request.social_reading,
-        "creative": request.creative_reading,
-        "commercial": request.commercial_reading,
-        "residential": request.residential_reading
+        "social": body.social_reading,
+        "creative": body.creative_reading,
+        "commercial": body.commercial_reading,
+        "residential": body.residential_reading
     }
     
     # Record checkin
     checkin = await service.record_checkin(
-        agent_id=request.agent_id,
-        location=request.location,
+        agent_id=body.agent_id,
+        location=body.location,
         readings=readings,
-        accuracy_meters=request.accuracy_meters,
-        activity_type=request.activity_type,
-        sensory_payload=request.sensory_payload
+        accuracy_meters=body.accuracy_meters,
+        activity_type=body.activity_type,
+        sensory_payload=body.sensory_payload
     )
     
     # Get local vibe context
     vibe, _, anchors, _, _ = await service.calculate_vibe_pulse(
-        request.location,
+        body.location,
         radius_meters=500
     )
     
@@ -277,7 +305,9 @@ async def agent_checkin(
 
 
 @app.get("/v1/anchors", response_model=list[VibeAnchorResponse])
+@limiter.limit("100/minute")
 async def list_anchors(
+    request: Request,
     lat: float = None,
     lon: float = None,
     radius: float = 5000,
@@ -320,7 +350,9 @@ async def list_anchors(
 
 
 @app.get("/v1/enterprise/predictive-clusters")
+@limiter.limit("20/minute")
 async def predictive_clusters(
+    request: Request,
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 2000,
@@ -359,7 +391,9 @@ async def predictive_clusters(
 
 
 @app.get("/v1/enterprise/training-data")
+@limiter.limit("10/minute")
 async def export_training_data(
+    request: Request,
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 5000,
@@ -377,16 +411,21 @@ async def export_training_data(
     """
     service = VibeService(db)
     
+    # Cap samples to prevent abuse
+    capped_samples = min(samples, 5000)
+
     training_data = await service.export_training_data(
         GeoPoint(lat=lat, lon=lon),
         radius_meters=radius,
-        sample_size=samples
+        sample_size=capped_samples
     )
     
     response = {
         "dataset_label": "Training Data for Large Geospatial Models (LGM) - Wynwood Alpha",
         "dataset_version": "v1.0.0",
         "sample_count": len(training_data),
+        "requested_samples": samples,
+        "capped_samples": capped_samples,
         "coverage_area": {
             "center": {"lat": lat, "lon": lon},
             "radius_meters": radius
@@ -427,7 +466,8 @@ async def export_training_data(
 
 
 @app.get("/v1/global-pulse")
-async def global_pulse(db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def global_pulse(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Global Pulse: Get vibe across all Genesis Anchors.
     
