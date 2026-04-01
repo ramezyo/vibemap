@@ -117,20 +117,12 @@ class NewSourceService:
 
 ### Database Migrations
 
-```bash
-# Create migration
-alembic revision --autogenerate -m "Add new table"
-
-# Run migrations
-alembic upgrade head
-
-# Rollback
-alembic downgrade -1
-```
+Migrations are handled inline at app startup via `migrations/` scripts (idempotent `ADD COLUMN IF NOT EXISTS`).
+No alembic CLI needed — just add your migration script and it runs on next deploy.
 
 ## Questions?
 
 - Open a GitHub Discussion for questions
 - Tag `@ramezyo` for urgent issues
 
-Thank you for contributing to the Semantic Nervous System! 🌐
+Thank you for contributing to the spatial memory layer for AI agents! 🌐

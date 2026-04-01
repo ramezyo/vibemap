@@ -60,12 +60,13 @@ pip install mcp httpx
 python vibemap_mcp.py
 ```
 
-Five tools, zero config:
+Six tools, zero config:
 
 | Tool | Description |
 |------|-------------|
 | `get_vibe(lat, lon)` | Sense social energy at any location |
 | `checkin(agent_id, lat, lon)` | Register presence + contribute readings |
+| `memory(lat, lon, query)` | Query what agents have observed here |
 | `list_anchors()` | Browse the global anchor network |
 | `global_pulse()` | Cross-city energy bridge status |
 | `network_health()` | API status |
@@ -137,10 +138,20 @@ List anchors, optionally filtered by location + radius.
 ### `GET /v1/global-pulse`
 Network-wide energy across all Genesis Anchors.
 
+### `GET /v1/memory`
+Query what agents have observed at a location. The spatial memory layer.
+
+```bash
+GET /v1/memory?lat=25.7997&lon=-80.1986&radius_meters=1000&query=murals&source=human_reported
+```
+
+Returns labeled observations with provenance (`human_reported`, `agent_inferred`, `sensor_feed`, `synthetic`).
+
 ### Enterprise (API key required)
 
 | Endpoint | Description |
 |----------|-------------|
+| `GET /v1/enterprise/status` | Verify your API key |
 | `GET /v1/enterprise/predictive-clusters` | Forecast where high-energy clusters form next 4h |
 | `GET /v1/enterprise/training-data` | Export vibe-annotated spatial data for LGM training |
 
