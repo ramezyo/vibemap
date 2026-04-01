@@ -5,10 +5,17 @@ Free alternative to Twitter/X API using Reddit's location-based communities
 
 import os
 import httpx
-import asyncpraw
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
 from aiocache import cached
+
+# asyncpraw is optional — only needed if REDDIT_CLIENT_ID/SECRET are set
+try:
+    import asyncpraw
+    ASYNCPRAW_AVAILABLE = True
+except ImportError:
+    asyncpraw = None
+    ASYNCPRAW_AVAILABLE = False
 
 # Reddit API credentials (free tier: 60 requests/minute)
 # Get from: https://www.reddit.com/prefs/apps
@@ -61,8 +68,8 @@ class RedditSentimentService:
         self.reddit = None
         
     async def _get_reddit_client(self):
-        """Get or create Reddit client."""
-        if self.reddit is None and self.client_id and self.client_secret:
+        """Get or create Reddit client. Returns None if asyncpraw not installed or no credentials."""
+        if self.reddit is None and self.client_id and self.client_secret and ASYNCPRAW_AVAILABLE:
             self.reddit = asyncpraw.Reddit(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
