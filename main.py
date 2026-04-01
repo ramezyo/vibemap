@@ -376,6 +376,7 @@ async def list_anchors(
 
 
 @app.get("/v1/enterprise/predictive-clusters")
+@limiter.limit("20/minute")
 async def predictive_clusters(
     credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
@@ -416,6 +417,7 @@ async def predictive_clusters(
 
 
 @app.get("/v1/enterprise/training-data")
+@limiter.limit("10/minute")
 async def export_training_data(
     credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
