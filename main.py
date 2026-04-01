@@ -14,7 +14,7 @@ from slowapi.errors import RateLimitExceeded
 from config import get_settings
 from db.database import init_db, get_db
 from schemas.schemas import (
-    VibePulseRequest, VibePulseResponse, VibeAnchorResponse,
+    VibePulseRequest, VibePulseResponse, VibeAnchorResponse, VibeAnchorCreate,
     AgentCheckinRequest, AgentCheckinResponse, HealthResponse,
     GeoPoint, VibeMetrics
 )
@@ -373,6 +373,77 @@ async def list_anchors(
         )
         for anchor in anchors
     ]
+
+
+@app.post("/v1/anchors", response_model=VibeAnchorResponse)
+@limiter.limit("30/minute")
+async def create_anchor(
+    request: Request,
+    body: VibeAnchorCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Create a new vibe anchor at any location.
+
+    Anchors are persistent spatial nodes that accumulate energy from
+    agent check-ins. Anyone can plant an anchor — this is how the
+    network grows organically.
+    """
+    from models.models import VibeAnchor as VA
+    from sqlalchemy import select
+
+    # Check for duplicate (same name)
+    result = await db.execute(select(VA).where(VA.name == body.name))
+    existing = result.scalar_one_or_none()
+    if existing:
+        return VibeAnchorResponse(
+            id=existing.id,
+            name=existing.name,
+            description=existing.description,
+            location=GeoPoint(lat=existing.lat, lon=existing.lon),
+            vibe=VibeMetrics(
+                social=existing.social_energy,
+                creative=existing.creative_energy,
+                commercial=existing.commercial_energy,
+                residential=existing.residential_energy
+            ),
+            genesis=existing.genesis,
+            last_pulse=existing.last_pulse,
+            checkin_count=existing.checkin_count,
+            properties=existing.properties or {}
+        )
+
+    anchor = VA(
+        name=body.name,
+        description=body.description,
+        lat=body.location.lat,
+        lon=body.location.lon,
+        social_energy=body.social_energy,
+        creative_energy=body.creative_energy,
+        commercial_energy=body.commercial_energy,
+        residential_energy=body.residential_energy,
+        properties=body.properties or {}
+    )
+    db.add(anchor)
+    await db.commit()
+    await db.refresh(anchor)
+
+    return VibeAnchorResponse(
+        id=anchor.id,
+        name=anchor.name,
+        description=anchor.description,
+        location=GeoPoint(lat=anchor.lat, lon=anchor.lon),
+        vibe=VibeMetrics(
+            social=anchor.social_energy,
+            creative=anchor.creative_energy,
+            commercial=anchor.commercial_energy,
+            residential=anchor.residential_energy
+        ),
+        genesis=anchor.genesis,
+        last_pulse=anchor.last_pulse,
+        checkin_count=anchor.checkin_count,
+        properties=anchor.properties or {}
+    )
 
 
 @app.get("/v1/enterprise/predictive-clusters")

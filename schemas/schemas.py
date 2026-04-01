@@ -27,7 +27,11 @@ class VibeAnchorBase(BaseModel):
 
 class VibeAnchorCreate(VibeAnchorBase):
     """Schema for creating a new vibe anchor."""
-    pass
+    social_energy: float = Field(0.5, ge=0, le=1)
+    creative_energy: float = Field(0.5, ge=0, le=1)
+    commercial_energy: float = Field(0.5, ge=0, le=1)
+    residential_energy: float = Field(0.5, ge=0, le=1)
+    properties: dict = {}
 
 
 class VibeAnchorResponse(VibeAnchorBase):

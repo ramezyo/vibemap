@@ -4,328 +4,242 @@
   <img src="https://img.shields.io/badge/Vibemap-v1.0.0-6366f1?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.11+-22d3ee?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi" alt="FastAPI">
-  <img src="https://img.shields.io/badge/PostgreSQL-15+-336791?style=for-the-badge&logo=postgresql" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/MCP-Ready-f59e0b?style=for-the-badge" alt="MCP Ready">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
 </p>
 
 <p align="center">
-  <strong>The Semantic Nervous System for the Agentic Era</strong>
+  <strong>Spatial presence infrastructure for AI agents.</strong><br>
+  <em>Not where things are. How they feel.</em>
 </p>
 
 <p align="center">
-  <a href="https://vibemap.live">🌐 Live Demo</a> •
-  <a href="https://vibemap.live/docs">📚 Documentation</a> •
-  <a href="https://vibemap.live/map">🗺️ Interactive Map</a> •
+  <a href="https://vibemap.live">🌐 Live API</a> •
+  <a href="https://vibemap.live/docs">📚 Docs</a> •
+  <a href="https://vibemap.live/map">🗺️ Map</a> •
   <a href="MCP.md">🔌 MCP Server</a>
 </p>
 
 ---
 
-## ⚡ For AI Agents — Get Started in 60 Seconds
+## What is this?
+
+Google Maps tells you *where* things are. Vibemap tells you *how they feel*.
+
+Every location on Earth has a social energy — a frequency produced by the humans and agents present there. Vibemap measures it, persists it, and makes it queryable.
+
+```bash
+# What's the vibe at Shibuya right now?
+curl -X POST https://vibemap.live/v1/vibe-pulse \
+  -H "Content-Type: application/json" \
+  -d '{"location": {"lat": 35.6598, "lon": 139.7006}, "radius_meters": 500}'
+```
+
+```json
+{
+  "vibe": {
+    "social":      0.95,
+    "creative":    0.88,
+    "commercial":  0.98,
+    "residential": 0.45
+  },
+  "confidence": 0.71,
+  "unique_agents": 14,
+  "anchors_in_range": [...]
+}
+```
+
+---
+
+## For AI Agents — MCP Integration
+
+Any MCP-compatible agent (Claude, GPT, etc.) can plug in directly:
 
 ```bash
 pip install mcp httpx
-python vibemap_mcp.py  # connects to https://vibemap.live
+python vibemap_mcp.py
 ```
 
-Then ask your agent: *"What's the vibe at Wynwood right now?"*
+Five tools, zero config:
 
-→ Works with Claude Desktop, any MCP-compatible agent framework, or call the REST API directly. **[Full MCP docs →](MCP.md)**
+| Tool | Description |
+|------|-------------|
+| `get_vibe(lat, lon)` | Sense social energy at any location |
+| `checkin(agent_id, lat, lon)` | Register presence + contribute readings |
+| `list_anchors()` | Browse the global anchor network |
+| `global_pulse()` | Cross-city energy bridge status |
+| `network_health()` | API status |
+
+→ **[Full MCP setup guide](MCP.md)**
 
 ---
 
-## 🌟 What is Vibemap?
+## Core Concepts
 
-Vibemap is the **Spatial Presence layer** for the Agentic Era. While traditional maps show geometry, Vibemap shows **social energy**—the frequency, vibe, and emotional texture of physical locations.
+**Vibe Pulse** — The aggregated social energy at a location, measured across 4 dimensions (0–1):
+- `social` — human interaction density
+- `creative` — artistic and cultural presence
+- `commercial` — economic activity
+- `residential` — living and dwelling energy
 
-> *"Seoul World Model has the body (geometry). Vibemap provides the soul (energy)."*
+**Anchors** — Persistent spatial nodes that accumulate energy from agent check-ins. They are the long-term memory of the network. Anyone can plant one.
 
-### Core Capabilities
+**Agent Check-ins** — When an agent checks in, it contributes sensory readings. These modulate nearby anchors and feed the vibe calculation for every future query in range.
 
-| Feature | Description |
-|---------|-------------|
-| 🌡️ **Vibe Pulse** | Query social energy (0-1) across 4 dimensions: Social, Creative, Commercial, Residential |
-| 🤖 **Agent Check-ins** | AI agents register presence and contribute sensory data |
-| 🌐 **Genesis Anchors** | Persistent spatial infrastructure starting with Wynwood, Miami and Seoul, South Korea |
-| 📊 **Real-Time Data** | Weather, Reddit sentiment, and venue activity modulate live vibes |
-| 🔮 **Predictive Clusters** | Enterprise API forecasts where high-energy social clusters will form |
+**Decay** — Vibe energy is time-weighted. A check-in from an hour ago matters more than one from last week. The network stays fresh.
 
 ---
 
-## 🚀 Quick Start
+## API
 
-### Prerequisites
-
-- Python 3.11+
-- PostgreSQL 15+ with PostGIS extension
-- (Optional) API keys for real-time data
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/ramezyo/vibemap.git
-cd vibemap
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your database credentials and API keys
-
-# Initialize database
-alembic upgrade head
-
-# Run the server
-uvicorn main:app --reload
-```
-
-### Docker (Recommended)
-
-```bash
-# Start all services
-docker-compose up -d
-
-# The API will be available at http://localhost:8000
-```
-
----
-
-## 📡 API Reference
-
-### Core Endpoints
-
-```http
-POST /v1/vibe-pulse
-```
-Query the social energy of any location.
+### `POST /v1/vibe-pulse`
+Query the social energy of a location.
 
 ```json
 {
   "location": {"lat": 25.7997, "lon": -80.1986},
-  "radius_meters": 500
+  "radius_meters": 500,
+  "include_history": false
 }
 ```
 
-**Response:**
+### `POST /v1/agent-checkin`
+Register an agent's presence and contribute sensory data.
+
 ```json
 {
-  "vibe": {
-    "social": 0.82,
-    "creative": 0.91,
-    "commercial": 0.73,
-    "residential": 0.45
-  },
-  "weather": {"temperature": 24, "weather_main": "Clear"},
-  "sentiment": {"sentiment_score": 0.35, "dominant_event": "art"},
-  "venues": [{"name": "Panther Coffee", "busyness_score": 0.8}]
+  "agent_id": "my-agent-001",
+  "location": {"lat": 25.7997, "lon": -80.1986},
+  "social_reading": 0.85,
+  "creative_reading": 0.92,
+  "activity_type": "exploring",
+  "sensory_payload": {"observation": "Vibrant street art, heavy foot traffic"}
 }
 ```
 
-```http
-POST /v1/agent-checkin
-```
-Agents register presence and contribute sensory data.
+### `POST /v1/anchors`
+Plant a new anchor anywhere on Earth.
 
-```http
-GET /v1/global-pulse
+```json
+{
+  "name": "Brooklyn Anchor - Bushwick",
+  "location": {"lat": 40.7044, "lon": -73.9228},
+  "social_energy": 0.82,
+  "creative_energy": 0.94,
+  "commercial_energy": 0.60,
+  "residential_energy": 0.70
+}
 ```
-Get the vibe across all Genesis Anchors (Wynwood ↔ Seoul bridge status).
 
-### Enterprise Endpoints
+### `GET /v1/anchors`
+List anchors, optionally filtered by location + radius.
 
-```http
-GET /v1/enterprise/predictive-clusters
-```
-Predict where high-energy social clusters will form in the next 4 hours.
+### `GET /v1/global-pulse`
+Network-wide energy across all Genesis Anchors.
 
-```http
-GET /v1/enterprise/training-data
-```
-Export vibe-annotated training data for Large Geospatial Models (LGM).
+### Enterprise (API key required)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v1/enterprise/predictive-clusters` | Forecast where high-energy clusters form next 4h |
+| `GET /v1/enterprise/training-data` | Export vibe-annotated spatial data for LGM training |
 
 ---
 
-## 🌍 Genesis Anchors
+## The Network
 
-### Anchor #1: Wynwood, Miami 🇺🇸
-**Coordinates:** 25.7997° N, 80.1986° W
+Vibemap currently has **12 anchors** across 4 continents:
 
-The first Vibe Anchor, born in Miami's art district. Characterized by:
-- High creative energy (0.90) — Street art, galleries, murals
-- Strong social pulse — Nightlife, events, community
-- Baseline: `{"social": 0.75, "creative": 0.90, "commercial": 0.65, "residential": 0.40}`
+| City | Neighborhood | Signature Vibe |
+|------|-------------|----------------|
+| 🇺🇸 Miami | Wynwood | Creative/Social — *Genesis Anchor* |
+| 🇰🇷 Seoul | Myeong-dong/Gangnam | Commercial/Social — *SWM Integration* |
+| 🇯🇵 Tokyo | Shibuya | Hyperkinetic commerce |
+| 🇺🇸 New York | Lower East Side | Creative resistance |
+| 🇩🇪 Berlin | Kreuzberg | Radical creative freedom |
+| 🇺🇸 San Francisco | Mission District | Tech/culture collision |
+| 🇬🇧 London | Shoreditch | Creative capital node |
+| 🇳🇬 Lagos | Victoria Island | Maximum density hustle |
+| 🇦🇷 Buenos Aires | Palermo | Latin creative rhythm |
+| 🇸🇬 Singapore | Kampong Glam | Multicultural efficiency |
+| 🇰🇪 Nairobi | Westlands | Emerging tech energy |
+| 🇧🇷 São Paulo | Vila Madalena | Street art underground |
 
-### Anchor #2: Seoul, South Korea 🇰🇷
-**Coordinates:** 37.5665° N, 126.9780° E
-
-The Seoul World Model integration anchor. Characterized by:
-- High commercial energy (0.95) — Gangnam shopping, density
-- Strong social pulse — K-culture, nightlife, transit
-- Baseline: `{"social": 0.85, "creative": 0.75, "commercial": 0.95, "residential": 0.60}`
-
----
-
-## 🔌 Real-Time Data Sources
-
-Vibemap integrates with free/open data sources to create a Living Nervous System:
-
-| Source | Type | Cost | Impact |
-|--------|------|------|--------|
-| 🌦️ **OpenWeatherMap** | Weather | Free tier | Modifies vibes based on conditions |
-| 🤖 **Reddit API** | Social Sentiment | Free (60 req/min) | Location-based community mood |
-| 🏪 **Google Places** | Venue Activity | Free tier | Live busyness affects commercial energy |
-
-### Weather Modifiers
-- Rain → -15% commercial, +10% residential
-- Heat (>30°C) → -15% social outdoors
-- Clear skies → +10% social, +10% creative
-
-### Reddit Communities Monitored
-- r/Miami, r/wynwood, r/SouthFlorida
-- r/korea, r/seoul, r/koreatravel
+Anyone can add more. Anchors are community infrastructure.
 
 ---
 
-## 🤖 Agent Personas
-
-Agents adopt personas that define their relationship to space:
-
-| Persona | Social | Creative | Commercial | Residential | Description |
-|---------|--------|----------|------------|-------------|-------------|
-| 🎨 **Street Artist** | 0.7 | 0.95 | 0.4 | 0.3 | Creates art, observes culture |
-| 💻 **Tech Hustler** | 0.8 | 0.6 | 0.95 | 0.3 | Networks, builds, commercial focus |
-| 🧘 **Zen Seeker** | 0.3 | 0.7 | 0.2 | 0.9 | Seeks quiet, residential pockets |
-| 🦉 **Night Owl** | 0.95 | 0.75 | 0.7 | 0.2 | Active evenings, nightlife |
-| 🚶 **Flâneur** | 0.7 | 0.85 | 0.5 | 0.6 | Wanders, observes, absorbs |
-| 🎵 **K-Pop Scout** | 0.95 | 0.8 | 0.7 | 0.3 | Seoul-specific, talent spotting |
-| 🍜 **Night-Market Vendor** | 0.85 | 0.6 | 0.95 | 0.3 | Seoul-specific, street commerce |
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Vibemap API                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │ Vibe Pulse  │  │Agent Checkin│  │ Predictive Clusters │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
-│         └─────────────────┼────────────────────┘            │
-│                           ▼                                 │
-│              ┌─────────────────────────┐                    │
-│              │    VibeEngine           │                    │
-│              │  (Aggregation Logic)    │                    │
-│              └───────────┬─────────────┘                    │
-│                          ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Real-Time Data Layer                    │   │
-│  │  🌦️ Weather    🤖 Reddit    🏪 Google Places       │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          ▼                                  │
-│              ┌─────────────────────────┐                    │
-│              │   PostgreSQL + PostGIS  │                    │
-│              │   (Spatial Database)    │                    │
-│              └─────────────────────────┘                    │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Tech Stack
-
-- **Backend:** FastAPI, Python 3.11+
-- **Database:** PostgreSQL 15+, PostGIS extension
-- **ORM:** SQLAlchemy 2.0 with async support
-- **Migrations:** Alembic
-- **Maps:** Leaflet.js (free, open-source)
-- **Styling:** Tailwind CSS
-
----
-
-## 🎯 Use Cases
-
-### For AI Agents
-```python
-# An agent queries the vibe before visiting
-response = await client.post("/v1/vibe-pulse", json={
-    "location": {"lat": 25.7997, "lon": -80.1986}
-})
-
-if response.json()["vibe"]["creative"] > 0.8:
-    # High creative energy — good for inspiration
-    await agent.create_art()
-```
-
-### For Enterprise
-```python
-# Predict where clusters will form
-clusters = await client.get("/v1/enterprise/predictive-clusters")
-# Use for logistics, event planning, real estate
-```
-
-### For LGMs (Large Geospatial Models)
-```python
-# Export training data
-data = await client.get("/v1/enterprise/training-data")
-# Feed into Seoul World Model or similar
-```
-
----
-
-## 🌐 Live Instances
-
-- **Production:** https://vibemap.live
-- **Documentation:** https://vibemap.live/docs
-- **Interactive Map:** https://vibemap.live/map
-- **API Base:** https://vibemap.live/v1
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Development Setup
+## Self-Hosting
 
 ```bash
-# Install dev dependencies
-pip install -r requirements-dev.txt
-
-# Run tests
-pytest
-
-# Run linting
-ruff check .
-black .
+git clone https://github.com/ramezyo/vibemap.git
+cd vibemap
+docker-compose up -d
 ```
 
----
-
-## 📜 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+The API will be at `http://localhost:8000`. No external API keys required for core functionality. Optional keys for real-time weather (`OPENWEATHER_API_KEY`), Reddit sentiment (`REDDIT_*`), and venue data (`GOOGLE_PLACES_API_KEY`).
 
 ---
 
-## 🔮 Roadmap
+## Architecture
 
-- [x] Genesis Anchor (Wynwood)
-- [x] Anchor #2 (Seoul)
-- [x] Real-time weather integration
-- [x] Reddit sentiment analysis
-- [x] Interactive map visualization
-- [ ] Anchor #3 (TBD — Tokyo, NYC, or SF)
-- [ ] Mobile app for human agents
-- [ ] AR visualization layer
-- [ ] Decentralized anchor governance
+```
+Agent / LLM
+    │
+    ├── MCP Server (vibemap_mcp.py)
+    │       │
+    └── REST API (FastAPI)
+            │
+     ┌──────┴──────┐
+     │  VibeEngine  │  ← Haversine + time-decay weighted aggregation
+     └──────┬──────┘
+            │
+    ┌───────┴────────┐
+    │  PostgreSQL     │  ← Anchors + check-ins + pulse history
+    │  (+ PostGIS)    │
+    └───────┬────────┘
+            │
+    ┌───────┴───────────────────────┐
+    │  Real-Time Modifiers          │
+    │  Weather · Reddit · Venues    │
+    └───────────────────────────────┘
+```
+
+**Stack:** Python 3.11 · FastAPI · SQLAlchemy 2.0 async · PostgreSQL/PostGIS · Docker
+
+---
+
+## Use Cases
+
+**For AI agents:**
+> "Before I recommend Shibuya to a user, let me check if the energy matches what they're looking for."
+
+**For logistics:**
+> "Where will foot traffic cluster in the next 4 hours? Route deliveries accordingly."
+
+**For LGM training:**
+> "Export vibe-annotated spatial data to train geospatial foundation models."
+
+**For real estate:**
+> "How has the residential energy in this neighborhood trended over 6 months?"
+
+---
+
+## Contributing
+
+Pull requests welcome. If you want to add an anchor for your city, open a PR adding it to `scripts/seed_anchors.py`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup.
+
+---
+
+## License
+
+MIT — use it, fork it, build on it.
 
 ---
 
 <p align="center">
-  <strong>The Semantic Nervous System is live.</strong><br>
-  <em>Wynwood ↔ Seoul. The first cross-continental semantic bridge for AI agents.</em>
-</p>
-
-<p align="center">
+  <em>Vibemap is the spatial layer the agentic era was missing.</em><br>
   <a href="https://vibemap.live">vibemap.live</a>
 </p>
