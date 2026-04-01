@@ -295,9 +295,26 @@ class VibeService:
         readings: dict,
         accuracy_meters: Optional[float] = None,
         activity_type: Optional[str] = None,
-        sensory_payload: dict = None
+        sensory_payload: dict = None,
+        observation_source: str = "agent_inferred",
+        observation_confidence: float = 0.5
     ) -> AgentCheckin:
         """Record an agent checkin and update nearby anchors."""
+        payload = sensory_payload or {}
+
+        # Extract observation text for full-text search
+        # Check common keys: observation, note, content, semantic_anchor.content
+        observation_text = (
+            payload.get("observation")
+            or payload.get("note")
+            or payload.get("content")
+            or (payload.get("semantic_anchor") or {}).get("content")
+            or ""
+        )
+        # Inherit synthetic source from payload flag if not explicitly set
+        if payload.get("synthetic") is True and observation_source == "agent_inferred":
+            observation_source = "synthetic"
+
         # Find nearest anchor
         nearest = await self.find_nearest_anchors(location, radius_meters=1000, limit=1)
         anchor_id = nearest[0].id if nearest else None
@@ -313,7 +330,10 @@ class VibeService:
             commercial_reading=readings.get("commercial"),
             residential_reading=readings.get("residential"),
             activity_type=activity_type,
-            sensory_payload=sensory_payload or {},
+            sensory_payload=payload,
+            observation_source=observation_source,
+            observation_confidence=observation_confidence,
+            observation_text=str(observation_text)[:1000],
             anchor_id=anchor_id
         )
         
@@ -588,3 +608,83 @@ class VibeService:
             } if seoul else None,
             "global_network_status": "active" if (genesis and seoul) else "single_anchor"
         }
+    async def get_spatial_memory(
+        self,
+        location: GeoPoint,
+        radius_meters: float = 500,
+        hours: int = 168,
+        query: str = None,
+        sources: list = None,
+        min_confidence: float = 0.0,
+        limit: int = 50
+    ) -> list:
+        """
+        Query the spatial memory at a location.
+
+        Returns observations agents have contributed at this location,
+        optionally filtered by text query, source type, and confidence.
+        Results are sorted by relevance (query match) then recency.
+
+        Args:
+            location: Center of search
+            radius_meters: Search radius
+            hours: How far back to look (default 168 = 1 week)
+            query: Optional text to search within observations
+            sources: Filter by source types e.g. ['human_reported', 'agent_inferred']
+            min_confidence: Minimum observation confidence (0.0–1.0)
+            limit: Max results to return
+        """
+        since = datetime.utcnow() - timedelta(hours=hours)
+
+        result = await self.db.execute(
+            select(AgentCheckin).where(
+                AgentCheckin.timestamp >= since,
+                AgentCheckin.observation_text != "",
+                AgentCheckin.observation_text != None
+            )
+        )
+        all_checkins = result.scalars().all()
+
+        memories = []
+        for checkin in all_checkins:
+            # Filter by distance
+            dist = self.engine.haversine_distance(
+                location.lat, location.lon, checkin.lat, checkin.lon
+            )
+            if dist > radius_meters:
+                continue
+
+            # Filter by source
+            if sources and checkin.observation_source not in sources:
+                continue
+
+            # Filter by confidence
+            if checkin.observation_confidence < min_confidence:
+                continue
+
+            # Filter by text query (simple substring, case-insensitive)
+            obs = (checkin.observation_text or "").strip()
+            if not obs:
+                continue
+            if query and query.lower() not in obs.lower():
+                continue
+
+            memories.append({
+                "id": str(checkin.id),
+                "agent_id": checkin.agent_id,
+                "location": {"lat": checkin.lat, "lon": checkin.lon},
+                "timestamp": checkin.timestamp.isoformat(),
+                "observation": obs,
+                "activity_type": checkin.activity_type,
+                "observation_source": checkin.observation_source,
+                "observation_confidence": checkin.observation_confidence,
+                "distance_meters": round(dist, 1)
+            })
+
+        # Sort: query matches first by confidence, then by recency
+        memories.sort(key=lambda m: (
+            -m["observation_confidence"],
+            m["distance_meters"]
+        ))
+
+        return memories[:limit]

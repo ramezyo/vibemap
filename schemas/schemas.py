@@ -61,6 +61,22 @@ class AgentCheckinRequest(BaseModel):
     # Context
     activity_type: Optional[str] = Field(None, max_length=50)
     sensory_payload: dict = {}
+    
+    # Provenance — how was this observation made?
+    observation_source: str = Field(
+        "agent_inferred",
+        description=(
+            "How this observation was made: "
+            "'human_reported' (human physically present), "
+            "'agent_inferred' (deduced from public data), "
+            "'sensor_feed' (IoT/smart city sensor), "
+            "'synthetic' (simulation/testing)"
+        )
+    )
+    observation_confidence: float = Field(
+        0.5, ge=0, le=1,
+        description="How confident the agent is in this observation (0=guess, 1=certain)"
+    )
 
 
 class AgentCheckinResponse(BaseModel):
@@ -109,6 +125,29 @@ class VibePulseResponse(BaseModel):
     
     # Real-time venue activity
     venues: Optional[list] = None
+
+
+class SpatialMemoryEntry(BaseModel):
+    """A single memory entry — what an agent observed at a location."""
+    id: UUID
+    agent_id: str
+    location: GeoPoint
+    timestamp: datetime
+    observation: str
+    activity_type: Optional[str] = None
+    observation_source: str
+    observation_confidence: float
+    distance_meters: Optional[float] = None
+
+
+class SpatialMemoryResponse(BaseModel):
+    """Response from the spatial memory endpoint."""
+    location: GeoPoint
+    radius_meters: float
+    query: Optional[str]
+    hours: int
+    total_memories: int
+    memories: List[SpatialMemoryEntry]
 
 
 class HealthResponse(BaseModel):

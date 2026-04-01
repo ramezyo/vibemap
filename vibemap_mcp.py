@@ -117,12 +117,16 @@ def checkin(
     residential_reading: float = None,
     activity_type: str = None,
     note: str = None,
+    observation_source: str = "agent_inferred",
+    observation_confidence: float = 0.5,
 ) -> str:
     """
     Register your presence at a location and contribute sensory data.
 
     This records the agent's current location in the Vibemap network,
     updates nearby anchor energy levels, and returns the local vibe context.
+    Your observation (note) is stored in spatial memory and retrievable
+    by other agents querying this location.
 
     Args:
         agent_id: Unique identifier for this agent (e.g. "claude-agent-1")
@@ -133,12 +137,20 @@ def checkin(
         commercial_reading: Your sensed commercial energy (0.0–1.0), optional
         residential_reading: Your sensed residential energy (0.0–1.0), optional
         activity_type: What you're doing (e.g. "exploring", "working", "socializing")
-        note: Free-text observation about this location (stored in sensory payload)
+        note: Free-text observation about this location — what you saw, heard, or inferred
+        observation_source: How you made this observation:
+            "human_reported" (human physically present told you),
+            "agent_inferred" (you deduced it from public data),
+            "sensor_feed" (IoT/smart city data),
+            "synthetic" (simulation/test data)
+        observation_confidence: How confident you are (0.0=guess, 1.0=certain)
     """
     payload: dict = {
         "agent_id": agent_id,
         "location": {"lat": lat, "lon": lon},
         "sensory_payload": {},
+        "observation_source": observation_source,
+        "observation_confidence": max(0.0, min(1.0, observation_confidence)),
     }
     if social_reading is not None:
         payload["social_reading"] = max(0.0, min(1.0, social_reading))
@@ -165,11 +177,14 @@ def checkin(
     lines = [
         f"✅ Checked in: agent={agent_id} at ({loc.get('lat')}, {loc.get('lon')})",
         f"🕐 Timestamp: {data.get('timestamp', 'unknown')}",
+        f"📋 Source: {observation_source} (confidence: {observation_confidence:.2f})",
     ]
     if nearest:
         lines.append(f"📌 Nearest anchor: {nearest['name']} ({nearest['checkin_count']} total check-ins)")
     if local_vibe:
         lines.append(f"🌡️  Local vibe:{_fmt_vibe(local_vibe)}")
+    if note:
+        lines.append(f"💬 Observation stored in spatial memory")
 
     return "\n".join(lines)
 
@@ -210,6 +225,106 @@ def list_anchors(lat: float = None, lon: float = None, radius_meters: int = 5000
             f"  commercial={vibe.get('commercial', 0):.2f}\n"
             f"  🤖 {a.get('checkin_count', 0)} check-ins\n"
         )
+
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def memory(
+    lat: float,
+    lon: float,
+    radius_meters: int = 500,
+    hours: int = 168,
+    query: str = None,
+    sources: str = None,
+    min_confidence: float = 0.0,
+) -> str:
+    """
+    Query the spatial memory at a location.
+
+    Returns what agents have observed, sensed, or inferred at this location.
+    This is the collective intelligence layer — not just energy readings,
+    but actual observations about what is happening or has happened here.
+
+    Use this when you want to know:
+    - What have other agents noticed at this location?
+    - Has anything unusual been reported here recently?
+    - What's the texture of life at this place?
+
+    Args:
+        lat: Latitude of location to query
+        lon: Longitude of location to query
+        radius_meters: Search radius in meters (default 500)
+        hours: How far back to look in hours (default 168 = 1 week)
+        query: Optional text to search e.g. "construction", "busy", "quiet"
+        sources: Comma-separated source filter:
+            "human_reported" — from humans physically present
+            "agent_inferred" — deduced from public data
+            "sensor_feed"    — IoT/smart city sensors
+            "synthetic"      — simulation data
+        min_confidence: Minimum confidence threshold (0.0–1.0)
+
+    Examples:
+        memory(lat=25.7997, lon=-80.1986, query="art")
+        memory(lat=51.5226, lon=-0.0782, sources="human_reported", min_confidence=0.7)
+        memory(lat=35.6598, lon=139.7006, hours=24)
+    """
+    params = {
+        "lat": lat, "lon": lon,
+        "radius_meters": radius_meters,
+        "hours": hours,
+        "min_confidence": min_confidence,
+    }
+    if query:
+        params["query"] = query
+    if sources:
+        params["sources"] = sources
+
+    with httpx.Client(timeout=15) as client:
+        r = client.get(f"{VIBEMAP_API_URL}/v1/memory", params=params, headers=_headers())
+        r.raise_for_status()
+        data = r.json()
+
+    total = data.get("total_memories", 0)
+    memories = data.get("memories", [])
+
+    if total == 0:
+        hint = f" matching '{query}'" if query else ""
+        return f"🧠 No spatial memories found{hint} at ({lat}, {lon}) within {radius_meters}m / last {hours}h."
+
+    source_counts = {}
+    for m in memories:
+        s = m.get("observation_source", "unknown")
+        source_counts[s] = source_counts.get(s, 0) + 1
+
+    source_summary = "  ".join(f"{s}:{n}" for s, n in source_counts.items())
+
+    lines = [
+        f"🧠 Spatial Memory at ({lat}, {lon}) — {total} observations",
+        f"📍 Radius: {radius_meters}m  |  Window: {hours}h  |  Sources: {source_summary}\n",
+    ]
+
+    SOURCE_ICONS = {
+        "human_reported": "👤",
+        "agent_inferred": "🤖",
+        "sensor_feed": "📡",
+        "synthetic": "🔬",
+    }
+
+    for m in memories[:20]:
+        icon = SOURCE_ICONS.get(m.get("observation_source", ""), "•")
+        conf = m.get("observation_confidence", 0)
+        dist = m.get("distance_meters", 0)
+        ts = m.get("timestamp", "")[:16].replace("T", " ")
+        obs = m.get("observation", "")
+        agent = m.get("agent_id", "unknown")
+        lines.append(
+            f"{icon} [{ts}] {obs}\n"
+            f"   agent={agent}  dist={dist:.0f}m  confidence={conf:.2f}"
+        )
+
+    if total > 20:
+        lines.append(f"\n... and {total - 20} more. Narrow with query= or reduce radius.")
 
     return "\n".join(lines)
 

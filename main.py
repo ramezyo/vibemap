@@ -16,6 +16,7 @@ from db.database import init_db, get_db
 from schemas.schemas import (
     VibePulseRequest, VibePulseResponse, VibeAnchorResponse, VibeAnchorCreate,
     AgentCheckinRequest, AgentCheckinResponse, HealthResponse,
+    SpatialMemoryResponse, SpatialMemoryEntry,
     GeoPoint, VibeMetrics
 )
 from services.vibe_service import VibeService
@@ -56,7 +57,35 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
     await init_db()
-    
+
+    # Run incremental migrations (safe, idempotent)
+    try:
+        from db.database import engine as db_engine
+        from sqlalchemy import text as sa_text
+        IS_SQLITE = settings.database_url.startswith("sqlite")
+        provenance_cols = [
+            ("observation_source",     "VARCHAR(50) NOT NULL DEFAULT 'agent_inferred'"),
+            ("observation_confidence", "FLOAT NOT NULL DEFAULT 0.5"),
+            ("observation_text",       "TEXT NOT NULL DEFAULT ''"),
+        ]
+        async with db_engine.begin() as conn:
+            for col, definition in provenance_cols:
+                try:
+                    if IS_SQLITE:
+                        await conn.execute(sa_text(
+                            f"ALTER TABLE agent_checkins ADD COLUMN {col} {definition}"
+                        ))
+                    else:
+                        await conn.execute(sa_text(
+                            f"ALTER TABLE agent_checkins ADD COLUMN IF NOT EXISTS {col} {definition}"
+                        ))
+                except Exception as e:
+                    if "already exists" not in str(e).lower() and "duplicate" not in str(e).lower():
+                        print(f"⚠️  Migration warning ({col}): {e}")
+        print("✅ Provenance columns ready")
+    except Exception as e:
+        print(f"⚠️  Migration skipped: {e}")
+
     # Initialize genesis anchor and seoul anchor
     async for db in get_db():
         service = VibeService(db)
@@ -290,7 +319,9 @@ async def agent_checkin(
         readings=readings,
         accuracy_meters=body.accuracy_meters,
         activity_type=body.activity_type,
-        sensory_payload=body.sensory_payload
+        sensory_payload=body.sensory_payload,
+        observation_source=body.observation_source,
+        observation_confidence=body.observation_confidence
     )
     
     # Get local vibe context
@@ -443,6 +474,87 @@ async def create_anchor(
         last_pulse=anchor.last_pulse,
         checkin_count=anchor.checkin_count,
         properties=anchor.properties or {}
+    )
+
+
+@app.get("/v1/memory", response_model=SpatialMemoryResponse)
+@limiter.limit("60/minute")
+async def spatial_memory(
+    request: Request,
+    lat: float = 25.7997,
+    lon: float = -80.1986,
+    radius_meters: float = 500,
+    hours: int = 168,
+    query: str = None,
+    sources: str = None,
+    min_confidence: float = 0.0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Query the spatial memory at a location.
+
+    Returns observations that agents have recorded at this location —
+    what they saw, heard, inferred, or reported while present.
+    This is the persistent memory layer of the Vibemap network.
+
+    **Source types:**
+    - `human_reported` — a human physically present told their agent
+    - `agent_inferred` — deduced from public data (Reddit, news, APIs)
+    - `sensor_feed` — IoT / smart city sensor data
+    - `synthetic` — simulation data (excluded by default in trusted queries)
+
+    **Query examples:**
+    - `?lat=25.7997&lon=-80.1986&query=construction` — find construction mentions
+    - `?lat=51.5226&lon=-0.0782&sources=human_reported&min_confidence=0.7`
+    - `?lat=35.6598&lon=139.7006&hours=24` — last 24h in Shibuya
+
+    Args:
+        lat: Center latitude
+        lon: Center longitude
+        radius_meters: Search radius in meters (default 500)
+        hours: How far back to look (default 168 = 1 week)
+        query: Optional text search within observations
+        sources: Comma-separated source filter e.g. "human_reported,agent_inferred"
+        min_confidence: Minimum confidence threshold (0.0–1.0)
+        limit: Max results (default 50, max 200)
+    """
+    service = VibeService(db)
+    source_list = [s.strip() for s in sources.split(",")] if sources else None
+    limit = min(limit, 200)
+
+    memories = await service.get_spatial_memory(
+        location=GeoPoint(lat=lat, lon=lon),
+        radius_meters=radius_meters,
+        hours=hours,
+        query=query,
+        sources=source_list,
+        min_confidence=min_confidence,
+        limit=limit
+    )
+
+    entries = [
+        SpatialMemoryEntry(
+            id=m["id"],
+            agent_id=m["agent_id"],
+            location=GeoPoint(lat=m["location"]["lat"], lon=m["location"]["lon"]),
+            timestamp=m["timestamp"],
+            observation=m["observation"],
+            activity_type=m.get("activity_type"),
+            observation_source=m["observation_source"],
+            observation_confidence=m["observation_confidence"],
+            distance_meters=m.get("distance_meters")
+        )
+        for m in memories
+    ]
+
+    return SpatialMemoryResponse(
+        location=GeoPoint(lat=lat, lon=lon),
+        radius_meters=radius_meters,
+        query=query,
+        hours=hours,
+        total_memories=len(entries),
+        memories=entries
     )
 
 
