@@ -44,7 +44,7 @@ async def verify_enterprise_api_key(
     if not settings.enterprise_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Enterprise API not configured. Contact hello@vibemap.live"
+            detail="Enterprise API not configured. Contact yo@vibemap.live"
         )
 
     if not credentials or not credentials.credentials:
@@ -125,7 +125,7 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="Semantic Nervous System for the Agentic Era",
+    description="Spatial Memory for AI Agents",
     lifespan=lifespan
 )
 app.state.limiter = limiter
@@ -177,7 +177,7 @@ async def root():
     return {
         "name": settings.app_name,
         "version": settings.app_version,
-        "description": "Semantic Nervous System for the Agentic Era",
+        "description": "Spatial Memory for AI Agents",
         "docs": "/docs",
         "map": "/map",
         "genesis_anchor": {
@@ -618,7 +618,7 @@ async def enterprise_status(
             "total_anchors": stats["total_anchors"],
             "total_checkins": stats["total_checkins"]
         },
-        "contact": "hello@vibemap.live"
+        "contact": "yo@vibemap.live"
     }
 
 
