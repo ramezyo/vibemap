@@ -1,136 +1,100 @@
-# Monetization Strategy
+# Vibemap Monetization Strategy
 
-## Freemium Model
+## The Value Proposition
 
-### Free Tier (Open Access)
-- **Vibe Pulse** — Query any location
-- **Agent Check-in** — Register presence
-- **Basic Anchors** — Discover anchors
-- **Global Pulse** — Cross-anchor status
-- **Rate Limits:** 100 req/min
+Vibemap is the spatial memory layer for AI agents. The data moat is the product — every check-in makes the network more valuable for every other agent. This is a classic network effect business with a clear freemium path.
 
-**Purpose:** Drive adoption, build network effects, attract developers
+---
 
-### Pro Tier ($49/month)
-- **Everything in Free, plus:**
-- **Higher Rate Limits:** 1000 req/min
-- **Historical Data:** Access to 30 days of vibe history
-- **Priority Support:** Discord/Email support
-- **Custom Anchors:** Create private anchors for your community
-- **Analytics Dashboard:** Track your agents' activity
+## Tier Structure
 
-**Target:** Individual developers, small startups, research projects
+### Free (Open Access)
+No API key required. The network needs contributors, so we keep the write path fully open.
 
-### Enterprise Tier ($499/month)
-- **Everything in Pro, plus:**
-- **Unlimited Rate Limits**
-- **Predictive Clusters API** — Forecast social cluster formation
-- **Training Data Export** — LGM-compatible datasets
-- **White-label Options** — Custom branding
-- **SLA Guarantee** — 99.9% uptime
-- **Dedicated Support** — Direct Slack channel
+| Feature | Limit |
+|---------|-------|
+| `POST /v1/vibe-pulse` | 100 req/min |
+| `POST /v1/agent-checkin` | 60 req/min |
+| `GET /v1/memory` | 60 req/min, last 7 days |
+| `GET/POST /v1/anchors` | 100/30 req/min |
+| `GET /v1/global-pulse` | 60 req/min |
+| Memory sources | all |
+| Memory window | 7 days |
 
-**Target:** Logistics companies, real estate developers, city planners, AI model trainers
+**Purpose:** Drive adoption, build network effects, attract developers and agents.
 
-## Revenue Streams
+---
 
-### 1. API Subscriptions (Primary)
-- Recurring monthly revenue
-- Scales with usage
-- Self-serve via Stripe
+### Pro ($49/month)
+For developers building products on top of Vibemap.
 
-### 2. Data Licensing
-- Sell historical vibe datasets
-- Training data for LGMs
-- Urban planning insights
-- **Price:** $5,000-$50,000 per dataset
+Everything in Free, plus:
+- **Higher rate limits** — 1,000 req/min across all endpoints
+- **Extended memory window** — 90 days of spatial memory history
+- **Memory export** — Download observations as JSON/CSV
+- **Private anchors** — Create anchors visible only to your agents
+- **Webhook alerts** — Get notified when new observations match your query
+- **API key** — For analytics + rate limit management
+- **Priority support**
 
-### 3. Enterprise Consulting
-- Custom anchor deployment
-- City-wide vibe infrastructure
-- Integration with Seoul World Model, etc.
-- **Price:** $10,000+ per project
+**Target:** Individual developers, research labs, small startups.
 
-### 4. Affiliate/API Partnerships
-- Commission on Google Places API usage
-- Weather API affiliate links
-- Referral fees for hosting (Railway, etc.)
+---
 
-## Pricing Page Structure
+### Enterprise ($499/month)
+For companies building agent platforms, logistics, real estate, or smart city products.
 
-```
-┌─────────────────┬─────────────────┬─────────────────┐
-│     Free        │      Pro        │   Enterprise    │
-│    $0/month     │   $49/month     │  $499/month     │
-├─────────────────┼─────────────────┼─────────────────┤
-│ ✓ Vibe Pulse    │ ✓ Everything    │ ✓ Everything    │
-│ ✓ Agent Checkin │   in Free       │   in Pro        │
-│ ✓ Basic Anchors │                 │                 │
-│ ✓ Global Pulse  │ ✓ 1000 req/min  │ ✓ Unlimited     │
-│                 │ ✓ 30-day history│ ✓ Predictive    │
-│ 100 req/min     │ ✓ Custom anchors│   Clusters      │
-│                 │ ✓ Analytics     │ ✓ Training Data │
-│                 │                 │ ✓ White-label   │
-│                 │                 │ ✓ SLA           │
-├─────────────────┼─────────────────┼─────────────────┤
-│  [Get Started]  │   [Subscribe]   │  [Contact Sales]│
-└─────────────────┴─────────────────┴─────────────────┘
-```
+Everything in Pro, plus:
+- **Unlimited rate limits**
+- **Full memory history** — No time limit on observations
+- **Predictive Clusters API** — Forecast where high-energy clusters form in the next 4h
+- **Training Data Export** — Vibe-annotated spatial datasets for LGM training
+- **Bulk memory ingestion** — Ingest observations from your own sensor fleet
+- **SLA** — 99.9% uptime guarantee
+- **Dedicated support** — Direct engineering access
 
-## Implementation Plan
+**Target:** Logistics companies, real estate platforms, smart city projects, agent platform companies.
 
-### Phase 1: Growth (Now - Month 3)
-- Keep everything free
-- Build user base
-- Gather feedback
-- **Goal:** 1000 active agents
+---
 
-### Phase 2: Monetization (Month 3-6)
-- Launch Pro tier
-- Implement Stripe billing
-- Add rate limiting by tier
-- **Goal:** 50 paying customers
+## Revenue Scenarios
 
-### Phase 3: Enterprise (Month 6-12)
-- Launch Enterprise tier
-- Sales outreach to logistics/real estate
-- White-label partnerships
-- **Goal:** 10 enterprise clients
+| Scale | Free users | Pro | Enterprise | MRR |
+|-------|-----------|-----|------------|-----|
+| Early (100 agents) | 90 | 8 × $49 | 1 × $499 | ~$900 |
+| Growth (10K agents) | 8K | 150 × $49 | 20 × $499 | ~$17K |
+| Scale (100K agents) | 80K | 1.5K × $49 | 200 × $499 | ~$173K |
 
-## Competitive Positioning
+At scale, even conservative conversion (5% free → paid) produces significant MRR without enterprise. Enterprise contracts at logistics/smart city scale typically exceed $499/month — these are negotiated deals.
 
-| Provider | Price | What You Get |
-|----------|-------|--------------|
-| **Vibemap Free** | $0 | Spatial presence, vibe data, 2 anchors |
-| **Vibemap Pro** | $49/mo | Historical data, custom anchors, analytics |
-| **Vibemap Enterprise** | $499/mo | Predictions, training data, SLA |
-| Google Places API | $200+/mo | Venue data only, no sentiment |
-| Twitter/X API | $100+/mo | Social data only, no spatial |
-| Foursquare | $500+/mo | Venues + some social, no agent layer |
+---
 
-**Vibemap's unique value:** The only platform combining spatial, social, and agent layers.
+## Acquisition Thesis
 
-## Key Metrics to Track
+The strategic value isn't the SaaS revenue — it's the **data moat**.
 
-1. **MAU** (Monthly Active Agents)
-2. **API Calls / Day**
-3. **Conversion Rate** (Free → Pro)
-4. **Churn Rate**
-5. **Enterprise Pipeline**
-6. **Data Export Requests**
+As agents check in globally, Vibemap accumulates the first large-scale dataset of:
+- Agent-contributed spatial observations with provenance labels
+- Time-series social energy across 12+ cities
+- Cross-city vibe correlation patterns
+- Labeled human_reported vs agent_inferred spatial intelligence
 
-## Strategic Partnerships
+This dataset is uniquely valuable to:
+- **Mapping companies** (Mapbox, Google, HERE) — semantic layer on top of geometry
+- **Digital twin platforms** (Seoul World Model, Niantic Spatial, Microsoft Azure Digital Twins)
+- **Agent platforms** (Moltbook, any company building agent infrastructure)
+- **Foundation model labs** — spatial grounding data for training
 
-**Potential Partners:**
-- Meta (Moltbook integration)
-- Niantic (spatial + AR)
-- NAVER (Seoul World Model)
-- Google (Maps + Places)
+**Comparable:** Moltbook (social graph for agents) → acquired by Meta for undisclosed sum.  
+**Our position:** Spatial memory layer for agents — the physical world complement to Moltbook's social graph.
 
-**Valuation Drivers:**
-- Active agent network
-- Proprietary vibe datasets
-- Enterprise contracts
-- API integration partners
+---
 
-**Growth Trajectory:** Building toward strategic partnership opportunities within 12 months.
+## Near-Term Revenue Actions
+
+1. **Add API key management** — gate Pro/Enterprise endpoints, enable billing hooks
+2. **Stripe integration** — self-serve Pro signup
+3. **Usage dashboard** — show agents their contribution stats (retention driver)
+4. **Enterprise outreach** — direct contact with 3 logistics companies using agent fleets
+
+None of these require new infrastructure — they're product and go-to-market work on top of what's already built.

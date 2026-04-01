@@ -186,12 +186,14 @@ sudo systemctl start vibemap
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `OPENWEATHER_API_KEY` | No | Weather data (free tier available) |
-| `REDDIT_CLIENT_ID` | No | Reddit sentiment (free) |
-| `REDDIT_CLIENT_SECRET` | No | Reddit sentiment (free) |
-| `GOOGLE_PLACES_API_KEY` | No | Venue data (free tier available) |
-| `TWITTER_BEARER_TOKEN` | No | X sentiment ($100+/mo) |
+| `DATABASE_URL` | **Yes** | PostgreSQL connection string (with PostGIS) |
+| `OPENWEATHER_API_KEY` | No | Weather modifiers — free tier (1K calls/day) |
+| `REDDIT_CLIENT_ID` | No | Sentiment modifiers — free (60 req/min) |
+| `REDDIT_CLIENT_SECRET` | No | Sentiment modifiers — free |
+| `GOOGLE_PLACES_API_KEY` | No | Venue activity — free tier ($200/mo credit) |
+| `ENTERPRISE_API_KEY` | No | Protects `/v1/enterprise/*` endpoints |
+
+All optional variables gracefully degrade — the API runs without them, using baseline values for modifiers.
 
 ## Health Checks
 
@@ -203,8 +205,19 @@ curl https://vibemap.live/health
 {
   "status": "healthy",
   "version": "1.0.0",
-  "genesis_anchor_active": true
+  "genesis_anchor_active": true,
+  "total_anchors": 12,
+  "total_checkins": 194
 }
+```
+
+## Seeding the Network
+
+After first deploy, seed anchors and initial observations:
+
+```bash
+# Seed 10 global anchors (Tokyo, Berlin, London, Lagos, etc.)
+VIBEMAP_API_URL=https://your-instance.com python scripts/seed_anchors.py
 ```
 
 ## Monitoring

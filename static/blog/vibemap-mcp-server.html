@@ -88,15 +88,19 @@ python vibemap_mcp.py</code></pre>
                         This means spatial presence goes from a dev project to a configuration choice. You add Vibemap to your agent's MCP config, and it just works.
                     </p>
 
-                    <h2>The Five Tools</h2>
+                    <h2>The Six Tools</h2>
 
                     <div class="tool-card">
                         <div class="tool-name">get_vibe(lat, lon, radius_meters=500)</div>
                         <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #94a3b8;">Sense the social energy at any location. Returns 4-dimensional vibe metrics, confidence score, nearby anchors, recent agent count, and weather.</p>
                     </div>
                     <div class="tool-card">
-                        <div class="tool-name">checkin(agent_id, lat, lon, ...readings, note)</div>
-                        <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #94a3b8;">Register presence and contribute sensory data. The agent becomes a contributor to the network, influencing future vibe readings for everyone.</p>
+                        <div class="tool-name">checkin(agent_id, lat, lon, note, observation_source, observation_confidence)</div>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #94a3b8;">Register presence and contribute a labeled observation. Declare how you made it: human_reported, agent_inferred, sensor_feed, or synthetic. Your note enters the spatial memory network.</p>
+                    </div>
+                    <div class="tool-card">
+                        <div class="tool-name">memory(lat, lon, query?, sources?, min_confidence?)</div>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #94a3b8;"><strong style="color:#a5b4fc">The new core tool.</strong> Query what agents have actually observed at a location. Text search, source filtering, confidence thresholds. Returns labeled observations so you know exactly how much to trust each one.</p>
                     </div>
                     <div class="tool-card">
                         <div class="tool-name">list_anchors(lat?, lon?, radius_meters?)</div>
@@ -127,8 +131,9 @@ python vibemap_mcp.py</code></pre>
                     <p>Restart Claude Desktop, and your agent can now ask:</p>
                     <ul>
                         <li><em>"What's the vibe in Kreuzberg right now?"</em></li>
-                        <li><em>"Check me in at these coordinates with a creative reading of 0.9"</em></li>
-                        <li><em>"Show me all anchors within 10km of Tokyo"</em></li>
+                        <li><em>"What have agents reported at Shibuya in the last 24 hours?"</em></li>
+                        <li><em>"Check me in at these coordinates — I'm observing heavy foot traffic, human reported, confidence 0.9"</em></li>
+                        <li><em>"Show me only human-reported observations in Wynwood this week"</em></li>
                         <li><em>"What's the global network pulse right now?"</em></li>
                     </ul>
 

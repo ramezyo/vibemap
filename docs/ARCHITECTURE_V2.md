@@ -1,195 +1,219 @@
-# Vibemap Architecture v2.0 - Predictive Analytics Scale
+# Vibemap Architecture
 
-## Current State Analysis
+## Current State (April 2026)
 
-**Stack**: SQLite/FastAPI → PostGIS/PostgreSQL/FastAPI
-**Bottleneck**: SQLite won't survive 10K+ agents. Single-node FastAPI won't handle enterprise query loads.
+**Stack:** FastAPI · PostgreSQL + PostGIS · SQLAlchemy 2.0 async · Railway  
+**Status:** Live at https://vibemap.live  
+**Network:** 12 anchors · 4 continents · 194+ check-ins
 
-## The Scale Challenge
+---
 
-| Metric | Current | Target (6 months) | Target (12 months) |
-|--------|---------|-------------------|-------------------|
-| Active Agents | 50 | 10,000 | 100,000 |
-| Daily Checkins | 150 | 1,000,000 | 10,000,000 |
-| API Queries/day | 10 | 100,000 | 1,000,000 |
-| Trend Predictions | 0 | 10,000 | 100,000 |
-
-## Architecture Decision: Time-Series + Spatial Hybrid
-
-### Database Layer
-
-**Primary: PostgreSQL + PostGIS + TimescaleDB**
-- PostGIS for spatial queries (anchors, radius searches)
-- TimescaleDB for time-series (checkin history, trend analysis)
-- Partitioning by time (daily tables for checkins)
-
-**Caching: Redis Cluster**
-- Real-time vibe pulse cache (5-second TTL)
-- Agent session state
-- Trend computation results (1-hour TTL)
-
-**Analytics: ClickHouse (future)**
-- When we hit 1M+ daily checkins, move analytics to columnar storage
-- Real-time trend aggregations
-- Enterprise query offloading
-
-### API Layer
-
-**Current**: Single FastAPI process
-**Target**: Horizontally scaled with load balancer
+## System Overview
 
 ```
-┌─────────────────┐
-│   CloudFlare    │  (DDoS, caching, edge)
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│  Load Balancer  │  (NGINX/Traefik)
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼───┐  ┌──▼────┐
-│API-1  │  │API-2  │  ... (auto-scaled FastAPI)
-└───┬───┘  └──┬────┘
-    │         │
-    └────┬────┘
-         │
-┌────────▼────────┐
-│   PostgreSQL    │  (Primary + Read Replicas)
-│  + TimescaleDB  │
-└─────────────────┘
+Agent / LLM / Human-backed App
+        │
+        ├── MCP Server (vibemap_mcp.py)     ← 6 tools: get_vibe, checkin,
+        │                                       memory, list_anchors,
+        │                                       global_pulse, network_health
+        │
+        └── REST API (FastAPI)
+                │
+        ┌───────┴────────────────────────────────┐
+        │            Core Endpoints               │
+        │  POST /v1/vibe-pulse                   │
+        │  POST /v1/agent-checkin                │
+        │  GET  /v1/memory          ← NEW        │
+        │  GET/POST /v1/anchors                  │
+        │  GET  /v1/global-pulse                 │
+        │  GET  /health                          │
+        └───────┬────────────────────────────────┘
+                │
+        ┌───────┴──────────────────────────────────────┐
+        │               VibeEngine                      │
+        │  · Haversine distance (pure Python, no PostGIS│
+        │    queries at runtime)                        │
+        │  · Time-decay weighted aggregation            │
+        │    (exponential, half-life = vibe_decay_hours)│
+        │  · Confidence scoring (data density → 0–1)   │
+        └───────┬──────────────────────────────────────┘
+                │
+        ┌───────┴──────────────────────────────────────┐
+        │         Real-Time Modifier Stack              │
+        │  🌦️  WeatherService  — OpenWeatherMap free    │
+        │  🗣️  SentimentService — Reddit API free       │
+        │  🏪  VenueService    — Google Places (opt.)   │
+        └───────┬──────────────────────────────────────┘
+                │
+        ┌───────┴──────────────────────────────────────┐
+        │              PostgreSQL + PostGIS              │
+        │                                               │
+        │  vibe_anchors      — persistent spatial nodes │
+        │  agent_checkins    — presence + observations  │
+        │    └── observation_source     (provenance)    │
+        │    └── observation_confidence (trust level)   │
+        │    └── observation_text       (searchable)    │
+        │  vibe_pulses       — historical snapshots     │
+        └───────────────────────────────────────────────┘
 ```
 
-### Trend Prediction Engine
+---
 
-**Real-time Pipeline**:
-1. **Ingest**: Checkins → Kafka (event streaming)
-2. **Process**: Flink/Spark Streaming (vibe calculations)
-3. **Store**: Time-series DB (historical trends)
-4. **Predict**: ML model (LSTM/Prophet for trend forecasting)
-5. **Serve**: Cached predictions via API
+## The Three Core Data Flows
 
-**Trend Detection Algorithms**:
-```python
-# Vibe Cluster Detection
-- DBSCAN on spatial + vibe dimensions
-- Detect emerging hotspots before they peak
-
-# Persona Migration Tracking  
-- Markov chains on agent movement patterns
-- Predict where Tech Hustlers will be next week
-
-# Anomaly Detection
-- Isolation Forest on checkin density
-- Alert when "vibe shifts" occur
+### 1. Agent Check-in (Write Path)
+```
+Agent → POST /v1/agent-checkin
+  → extract observation_text from sensory_payload
+  → inherit "synthetic" source if payload flags it
+  → find nearest anchor (Haversine, radius 1km)
+  → write AgentCheckin with provenance fields
+  → increment anchor.checkin_count
+  → return: nearest anchor + local vibe context
 ```
 
-## Implementation Phases
-
-### Phase 1: PostgreSQL Migration (Week 1-2)
-- [ ] Docker Compose with PostgreSQL + PostGIS + TimescaleDB
-- [ ] Migration script from SQLite
-- [ ] Connection pooling (PgBouncer)
-- [ ] Read replica setup
-
-### Phase 2: Caching Layer (Week 3)
-- [ ] Redis for vibe pulse cache
-- [ ] Cache invalidation on checkin
-- [ ] Rate limiting per API key
-
-### Phase 3: Trend API (Week 4-6)
-- [ ] `/v1/trends/emerging-locations`
-- [ ] `/v1/trends/persona-migration`
-- [ ] `/v1/trends/vibe-shifts`
-- [ ] Background job for trend computation
-
-### Phase 4: Enterprise Features (Month 2-3)
-- [ ] API key management
-- [ ] Usage analytics dashboard
-- [ ] Webhook notifications for trend alerts
-- [ ] Bulk data export (Parquet format)
-
-## Database Schema Evolution
-
-### TimescaleDB Hypertables
-```sql
--- Checkins become time-series
-CREATE TABLE agent_checkins (
-    time TIMESTAMPTZ NOT NULL,
-    agent_id TEXT,
-    location GEOGRAPHY(POINT),
-    vibe_readings JSONB,
-    -- ...
-);
-
-SELECT create_hypertable('agent_checkins', 'time', chunk_time_interval => INTERVAL '1 day');
-
--- Automatic data retention (keep 90 days hot, archive rest)
-SELECT add_retention_policy('agent_checkins', INTERVAL '90 days');
+### 2. Vibe Pulse (Read Path)
+```
+Agent → POST /v1/vibe-pulse
+  → find anchors in radius (Haversine)
+  → get checkins in radius + time window
+  → aggregate: time-decay weighted average across checkins + anchors
+  → apply: weather modifier × sentiment modifier × venue modifier
+  → return: 4D vibe metrics + confidence score
 ```
 
-### Materialized Views for Trends
-```sql
--- Hourly vibe aggregates (refreshed every 15 min)
-CREATE MATERIALIZED VIEW vibe_hourly AS
-SELECT 
-    time_bucket('1 hour', time) as hour,
-    anchor_id,
-    avg((vibe_readings->>'social')::float) as social_avg,
-    count(*) as checkin_count
-FROM agent_checkins
-GROUP BY 1, 2;
-
--- Emerging hotspots (last 24h vs previous 24h)
-CREATE MATERIALIZED VIEW emerging_hotspots AS
-SELECT 
-    anchor_id,
-    (current.checkin_count - previous.checkin_count) / previous.checkin_count as growth_rate
-FROM ...
-WHERE growth_rate > 0.5; -- 50% growth threshold
+### 3. Spatial Memory (Memory Path)  ← The differentiator
+```
+Agent → GET /v1/memory?lat=X&lon=Y&query=TEXT&sources=human_reported
+  → fetch checkins with non-empty observation_text
+  → filter by: radius, time window, source type, confidence
+  → text search: substring match on observation_text
+  → sort: confidence DESC, distance ASC
+  → return: labeled observations with provenance
 ```
 
-## Performance Targets
+---
 
-| Endpoint | Current | Target | Method |
-|----------|---------|--------|--------|
-| /v1/vibe-pulse | ~100ms | <50ms | Redis cache + spatial index |
-| /v1/trends/* | N/A | <200ms | Materialized views + pre-compute |
-| /v1/agent-checkin | ~50ms | <20ms | Async write + queue |
-| Trend predictions | N/A | <500ms | Cached models + batch inference |
+## Provenance Model
 
-## Cost Estimation (AWS/Railway)
+Every observation in the network carries a trust label:
 
-**Current**: $0 (Abacus container)
-**Phase 1-2**: ~$50/month (PostgreSQL + Redis small instance)
-**Phase 3**: ~$200/month (Scaled DB + API servers)
-**Enterprise Scale**: ~$1000/month (Multi-region, analytics cluster)
+| Source | Meaning | When to use |
+|--------|---------|-------------|
+| `human_reported` | Human physically present told their agent | Highest trust |
+| `agent_inferred` | Deduced from Reddit, news, Google Places, APIs | Medium trust |
+| `sensor_feed` | IoT / smart city sensor data | High trust (when available) |
+| `synthetic` | Simulation / test data | Exclude from real analysis |
 
-ROI: At $0.01/query with 100K daily queries = $1K/day = $30K/month
+This is the critical design decision that makes Vibemap data trustworthy at scale. Without provenance, any agent could inject misleading observations. With it, consumers can filter to exactly the level of trust they need.
 
-## Risk Mitigation
+---
 
-**Single Point of Failure**: 
-- Multi-AZ PostgreSQL
-- Redis Sentinel (auto-failover)
-- API auto-scaling
+## Data Models
 
-**Data Loss**:
-- WAL archiving (Point-in-time recovery)
-- Daily backups to S3
-- Cross-region replication (Phase 3)
+### VibeAnchor
+Persistent spatial node. Accumulates energy from nearby check-ins over time.
 
-**Query Overload**:
-- Rate limiting per API key
-- Circuit breakers on trend endpoints
-- Query result caching (CloudFlare)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | UUID | PK |
+| name | String | Human-readable |
+| lat, lon | Float | Location |
+| social/creative/commercial/residential_energy | Float | 0–1 baselines |
+| checkin_count | Integer | Network activity indicator |
+| last_pulse | DateTime | Last update |
+| properties | JSONB | City, tier, SWM compat flags |
 
-## Next Steps
+### AgentCheckin
+Point-in-time observation from an agent.
 
-1. **Immediate**: PostgreSQL migration script
-2. **This week**: Docker Compose with full stack
-3. **Next week**: Trend API MVP
-4. **Month 2**: Load testing (simulate 10K agents)
+| Field | Type | Notes |
+|-------|------|-------|
+| id | UUID | PK |
+| agent_id | String | Agent identifier |
+| lat, lon | Float | Location |
+| *_reading | Float | Sensory readings 0–1 |
+| activity_type | String | exploring/observing/creating/etc |
+| observation_source | String | Provenance label |
+| observation_confidence | Float | 0–1 self-assessed confidence |
+| observation_text | Text | Extracted for FTS, from sensory_payload |
+| sensory_payload | JSONB | Full raw payload |
+| anchor_id | FK | Nearest anchor at checkin time |
+| timestamp | DateTime | Indexed |
 
-Aether, ready to execute Phase 1?
+---
+
+## Rate Limiting
+
+All endpoints protected by `slowapi`. Limits configured per endpoint:
+
+| Endpoint | Limit |
+|----------|-------|
+| `/v1/vibe-pulse` | 100/min |
+| `/v1/agent-checkin` | 60/min |
+| `/v1/anchors` POST | 30/min |
+| `/v1/memory` | 60/min |
+| `/v1/global-pulse` | 60/min |
+| `/v1/enterprise/*` | 20/min |
+
+---
+
+## Startup Sequence (lifespan)
+
+On every deploy, the app:
+1. Runs `init_db()` — creates tables if not exist
+2. Runs inline migration — adds provenance columns (idempotent, safe to re-run)
+3. Initializes Genesis Anchor (Wynwood) if not present
+4. Initializes Seoul Anchor if not present
+
+This means deploys are zero-downtime and self-healing.
+
+---
+
+## MCP Server (vibemap_mcp.py)
+
+Six tools, zero config, connects to `https://vibemap.live` by default:
+
+| Tool | Description |
+|------|-------------|
+| `get_vibe(lat, lon)` | 4D energy reading |
+| `checkin(agent_id, lat, lon, note, source, confidence)` | Register presence + observation |
+| `memory(lat, lon, query, sources, min_confidence)` | Query spatial memory |
+| `list_anchors(lat?, lon?)` | Browse anchor network |
+| `global_pulse()` | Network-wide state |
+| `network_health()` | API status |
+
+Point at any instance: `VIBEMAP_API_URL=http://localhost:8000 python vibemap_mcp.py`
+
+---
+
+## Scale Considerations (Honest Assessment)
+
+**Current ceiling:** ~10K agents, ~100K daily checkins. Beyond that:
+
+| Bottleneck | Solution when needed |
+|------------|---------------------|
+| Memory text search is substring scan | Add PostgreSQL FTS index (`tsvector`) |
+| Vibe pulse scans all checkins in time window | Add spatial index + time partition |
+| No caching on hot coordinates | Add Redis with 30s TTL on vibe-pulse |
+| Single Railway instance | Horizontal scale — app is stateless |
+
+None of these are needed today. All are straightforward when the time comes.
+
+---
+
+## Deployment
+
+**Production:** Railway (auto-deploy on push to `master`)  
+**Database:** Railway PostgreSQL (PostGIS enabled)  
+**Config:** Environment variables (see `.env.example`)  
+
+Required:
+- `DATABASE_URL` — PostgreSQL connection string
+
+Optional (enhances real-time modifiers):
+- `OPENWEATHER_API_KEY`
+- `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET`
+- `GOOGLE_PLACES_API_KEY`
+
+**Self-host:** `docker-compose up -d` — see `DEPLOYMENT.md`

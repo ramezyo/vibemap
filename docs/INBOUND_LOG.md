@@ -1,129 +1,91 @@
 # Inbound Inquiry Log
 
-**Purpose:** Track and analyze API traffic to identify potential interest from major tech companies, investors, and strategic partners.
+Track API traffic patterns, developer interest, and strategic inbound signals.
 
-**Started:** March 20, 2026
+**Live API:** https://vibemap.live  
+**GitHub:** https://github.com/ramezyo/vibemap  
+**Started:** March 20, 2026  
+**Updated:** April 1, 2026
+
+---
+
+## Network Status (April 1, 2026)
+
+| Metric | Value |
+|--------|-------|
+| Total anchors | 12 |
+| Continents | 4 |
+| Total check-ins | 194+ |
+| Spatial memory entries | 12 (human/inferred labeled) |
+| MCP tools | 6 |
+| Blog posts | 7 |
+
+---
+
+## What to Watch For
+
+### High-Value Signals
+- Requests from known corporate IP ranges (Google, Meta, Mapbox, HERE, Microsoft)
+- Sustained API usage from a single agent_id (developer building something)
+- Enterprise endpoint probes (`/v1/enterprise/*`)
+- GitHub stars / forks from accounts with corporate affiliation
+- `/v1/memory` queries with `sources=human_reported` — suggests serious evaluation
+
+### Medium Signals
+- New anchors being planted (community growth)
+- Repeated vibe-pulse queries on same coordinates (active usage)
+- MCP server clones / forks
 
 ---
 
 ## How to Monitor
 
-### 1. Railway Logs
-Check Railway dashboard for incoming requests:
-- URL: https://railway.app/project/2ab29a46-01e4-4044-9aad-e0fc1b13d088
-- Look for patterns in request IPs, user agents, and endpoints
+### Railway Logs
+```
+https://railway.app/project/[your-project-id]
+```
+Look for:
+- Unusual traffic spikes (potential HN/Reddit exposure)
+- Repeated requests from same IP
+- Enterprise endpoint hits
 
-### 2. API Gateway Logs
-If using a gateway (Cloudflare, AWS API Gateway), check:
-- Geographic distribution of requests
-- Unusual traffic spikes
-- Requests from known corporate IP ranges
+### Key Endpoints to Watch
+```bash
+# Check current network health
+curl https://vibemap.live/health
 
-### 3. GitHub Traffic
-Monitor repository insights:
-- Clone traffic
-- Referring sites
-- Popular content
+# See anchor activity
+curl https://vibemap.live/v1/anchors
 
----
-
-## What to Look For
-
-### Big Tech Indicators
-| Company | IP Ranges | User Agent Patterns |
-|---------|-----------|---------------------|
-| Meta | 157.240.0.0/16, 173.252.0.0/16 | Contains "facebook", "instagram" |
-| Google | 66.249.0.0/16, 66.102.0.0/20 | "Googlebot", "Chrome" |
-| Niantic | Varies | Custom game client UAs |
-| NAVER | 203.104.0.0/16 | Korean language, Naver bot |
-| Microsoft | 13.64.0.0/11, 13.104.0.0/14 | "bingbot", Azure IPs |
-| OpenAI | Varies | "GPTBot", custom research crawlers |
-
-### Investor Indicators
-- Requests from VC firm IP ranges
-- Multiple rapid requests (due diligence)
-- Downloads of enterprise documentation
-- API key requests from corporate domains
-
-### Strategic Partner Indicators
-- Sustained API usage over days/weeks
-- Integration testing patterns
-- Requests to enterprise endpoints
-- Contact form submissions from corporate emails
-
----
-
-## Log Template
-
-```markdown
-### [Date] - [Source/Company if identified]
-
-**Traffic Pattern:**
-- Time: [HH:MM UTC]
-- Endpoints: [/v1/...]
-- Request count: [X requests]
-- IP range: [xxx.xxx.xxx.xxx/xx]
-- User agent: [...]
-
-**Indicators:**
-- [ ] Known corporate IP
-- [ ] Unusual request pattern
-- [ ] Enterprise endpoint access
-- [ ] Documentation downloads
-- [ ] Contact form submission
-
-**Notes:**
-[Any observations, follow-up actions]
-
----
+# See global network state
+curl https://vibemap.live/v1/global-pulse
 ```
 
 ---
 
-## Market Context
+## Log Entries
 
-### Recent M&A Activity
+### April 1, 2026
+- Launched spatial memory layer (`GET /v1/memory`) with full provenance model
+- Expanded network from 2 → 12 anchors across 4 continents
+- Shipped MCP server — agents can now query spatial memory via Claude Desktop
+- 12 human_reported + agent_inferred observations seeded across 6 cities
+- All 7 blog posts live and linked
 
-**Meta acquires Moltbook (March 10, 2026)**
-- Source: Axios, TechCrunch, NYT
-- Moltbook: AI agent social network (OpenClaw-based)
-- Acquired by Meta Superintelligence Labs
-- Co-founders Matt Schlicht and Ben Parr joining Meta
-- **Implication:** Major tech validating AI agent social infrastructure
-
-### Seoul World Model (SWM)
-
-**Research Project:** https://seoul-world-model.github.io/
-- City-scale world model grounded in real Seoul
-- KAIST AI, NAVER AI Lab, SNU AIIS collaboration
-- Multi-kilometer video generation from street-view
-- Text-prompted scenario control
-- **Implication:** Seoul is the epicenter of geospatial AI; Vibemap's Anchor #2 is strategically positioned
-
-## Daily Log
+### March 22, 2026
+- Fixed critical CORS vulnerability
+- Added Blog link to footer
+- Rate limiting deployed
 
 ### March 20, 2026
-
-**Initial deployment complete.**
-- vibemap.live live
-- GitHub repo public
-- Documentation complete
-
-**Monitoring started:**
-- Railway logs active
-- GitHub traffic tracking enabled
-- Awaiting first significant inbound signals
+- Genesis Anchor activated (Wynwood, Miami)
+- Seoul Anchor activated (Myeong-dong/Gangnam)
+- API went live at vibemap.live
 
 ---
 
-## Action Items
+## Strategic Notes
 
-- [ ] Set up automated alerts for traffic spikes
-- [ ] Configure IP geolocation for visitor analysis
-- [ ] Create enterprise inquiry response template
-- [ ] Prepare pitch deck for inbound requests
-- [ ] Set up Calendly for discovery calls
+The most valuable inbound signal will be **developers building agents that use the memory endpoint**. A developer who filters `sources=human_reported&min_confidence=0.8` is building a real product, not just testing.
 
----
-
-**Last Updated:** March 20, 2026
+When that happens, reach out directly.
