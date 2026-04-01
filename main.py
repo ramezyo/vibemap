@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
+import hmac
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -23,29 +24,45 @@ from services.vibe_service import VibeService
 
 settings = get_settings()
 
-# Enterprise API Key security
+# ── Enterprise API Key Security ───────────────────────────────────────────────
+# Uses timing-safe comparison (hmac.compare_digest) to prevent timing attacks.
+# Key must be set via ENTERPRISE_API_KEY environment variable on Railway.
+# Clients pass: Authorization: Bearer <key>
+
 enterprise_security = HTTPBearer(auto_error=False)
 
-async def verify_enterprise_api_key(credentials: HTTPAuthorizationCredentials = Depends(enterprise_security)):
-    """Verify enterprise API key for protected endpoints."""
+async def verify_enterprise_api_key(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(enterprise_security)
+):
+    """
+    Verify enterprise API key for protected endpoints.
+    - 503 if key not configured server-side (not deployed yet)
+    - 401 if no credentials provided
+    - 403 if credentials are wrong (timing-safe comparison)
+    """
     if not settings.enterprise_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Enterprise API not configured. Contact sales@vibemap.live"
+            detail="Enterprise API not configured. Contact hello@vibemap.live"
         )
-    
-    if not credentials:
+
+    if not credentials or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key required. Include 'Authorization: Bearer YOUR_API_KEY' header"
+            detail="API key required. Include 'Authorization: Bearer YOUR_API_KEY' header.",
+            headers={"WWW-Authenticate": "Bearer"}
         )
-    
-    if credentials.credentials != settings.enterprise_api_key:
+
+    # Timing-safe comparison — prevents timing oracle attacks
+    provided = credentials.credentials.encode("utf-8")
+    expected = settings.enterprise_api_key.encode("utf-8")
+    if not hmac.compare_digest(provided, expected):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid API key"
+            detail="Invalid API key."
         )
-    
+
     return credentials
 
 # Get the directory containing this file
@@ -556,6 +573,35 @@ async def spatial_memory(
         total_memories=len(entries),
         memories=entries
     )
+
+
+@app.get("/v1/enterprise/status")
+@limiter.limit("30/minute")
+async def enterprise_status(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Verify enterprise API key and return account status.
+    Use this to confirm your key is working before integrating.
+    """
+    service = VibeService(db)
+    stats = await service.get_stats()
+    return {
+        "status": "authenticated",
+        "tier": "enterprise",
+        "endpoints": [
+            "GET /v1/enterprise/status",
+            "GET /v1/enterprise/predictive-clusters",
+            "GET /v1/enterprise/training-data"
+        ],
+        "network": {
+            "total_anchors": stats["total_anchors"],
+            "total_checkins": stats["total_checkins"]
+        },
+        "contact": "hello@vibemap.live"
+    }
 
 
 @app.get("/v1/enterprise/predictive-clusters")
