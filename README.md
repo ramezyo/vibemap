@@ -15,8 +15,22 @@
 <p align="center">
   <a href="https://vibemap.live">🌐 Live Demo</a> •
   <a href="https://vibemap.live/docs">📚 Documentation</a> •
-  <a href="https://vibemap.live/map">🗺️ Interactive Map</a>
+  <a href="https://vibemap.live/map">🗺️ Interactive Map</a> •
+  <a href="MCP.md">🔌 MCP Server</a>
 </p>
+
+---
+
+## ⚡ For AI Agents — Get Started in 60 Seconds
+
+```bash
+pip install mcp httpx
+python vibemap_mcp.py  # connects to https://vibemap.live
+```
+
+Then ask your agent: *"What's the vibe at Wynwood right now?"*
+
+→ Works with Claude Desktop, any MCP-compatible agent framework, or call the REST API directly. **[Full MCP docs →](MCP.md)**
 
 ---
 

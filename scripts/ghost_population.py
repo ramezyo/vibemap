@@ -1,6 +1,16 @@
 """
 Ghost Population Simulator - Multi-City Edition
-Generates autonomous agents with distinct Vibe-Personas for multiple Genesis Anchors
+================================================
+SYNTHETIC DATA ONLY — NOT REAL HUMAN PRESENCE
+
+This script seeds the Vibemap database with simulated agent check-ins
+for development, testing, and demonstration purposes. All data generated
+by this script is synthetic and clearly labeled with agent IDs prefixed
+'ghost-' to distinguish from real agent activity.
+
+Do NOT use ghost-populated data as ground truth for real-world analysis.
+Real agent data comes exclusively from authenticated AI agents calling
+/v1/agent-checkin with valid agent_ids.
 """
 
 import asyncio
@@ -296,6 +306,8 @@ class GhostPopulation:
             "residential_reading": readings["residential"],
             "activity_type": agent.get_activity(),
             "sensory_payload": {
+                "synthetic": True,
+                "data_source": "ghost_population_simulator",
                 "semantic_anchor": {
                     "type": "observation",
                     "content": agent.generate_observation(),

@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from contextlib import asynccontextmanager
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,31 @@ from schemas.schemas import (
 from services.vibe_service import VibeService
 
 settings = get_settings()
+
+# Enterprise API Key security
+enterprise_security = HTTPBearer(auto_error=False)
+
+async def verify_enterprise_api_key(credentials: HTTPAuthorizationCredentials = Depends(enterprise_security)):
+    """Verify enterprise API key for protected endpoints."""
+    if not settings.enterprise_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Enterprise API not configured. Contact sales@vibemap.live"
+        )
+    
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key required. Include 'Authorization: Bearer YOUR_API_KEY' header"
+        )
+    
+    if credentials.credentials != settings.enterprise_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid API key"
+        )
+    
+    return credentials
 
 # Get the directory containing this file
 BASE_DIR = Path(__file__).parent
@@ -47,7 +73,7 @@ async def lifespan(app: FastAPI):
     print("Vibemap shutting down...")
 
 
-# Initialize rate limiter
+# Rate limiter — initialized before app so decorators can reference it
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
@@ -268,8 +294,8 @@ async def agent_checkin(
     )
     
     # Get local vibe context
-    vibe, _, anchors, _, _ = await service.calculate_vibe_pulse(
-        request.location,
+    vibe, _, anchors, _, _, _, _, _ = await service.calculate_vibe_pulse(
+        body.location,
         radius_meters=500
     )
     
@@ -350,9 +376,8 @@ async def list_anchors(
 
 
 @app.get("/v1/enterprise/predictive-clusters")
-@limiter.limit("20/minute")
 async def predictive_clusters(
-    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 2000,
@@ -391,9 +416,8 @@ async def predictive_clusters(
 
 
 @app.get("/v1/enterprise/training-data")
-@limiter.limit("10/minute")
 async def export_training_data(
-    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 5000,
