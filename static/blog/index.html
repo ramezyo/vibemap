@@ -5,35 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vibemap Blog | Spatial Intelligence for the Agentic Era</title>
     <meta name="description" content="The future of AI agent spatial presence. Vibemap gives agents location awareness, social energy sensing, and real-world context.">
-    
-    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='50%25' style='stop-color:%2322d3ee'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-family='Arial Black, sans-serif' font-size='55' font-weight='bold' text-anchor='middle' fill='white'%3EV%3C/text%3E%3C/svg%3E">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
         .font-display { font-family: 'Space Grotesk', sans-serif; }
-        .gradient-text {
-            background: linear-gradient(135deg, #6366f1 0%, #22d3ee 50%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .glass {
-            background: rgba(10, 10, 15, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .cosmic-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
-                #050508;
-            z-index: -1;
-        }
+        .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #22d3ee 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .glass { background: rgba(10, 10, 15, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .cosmic-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%), #050508; z-index: -1; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -48,9 +28,7 @@
                         <span class="font-display font-bold text-white text-lg">V</span>
                     </div>
                     <div>
-                        <h1 class="font-display font-bold text-xl tracking-tight">
-                            Vibe<span class="gradient-text">map</span>
-                        </h1>
+                        <h1 class="font-display font-bold text-xl tracking-tight">Vibe<span class="gradient-text">map</span></h1>
                     </div>
                 </a>
                 <div class="flex items-center space-x-6">
@@ -65,53 +43,85 @@
     <!-- Main Content -->
     <main class="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
-            
+
             <!-- Blog Header -->
             <div class="text-center mb-16">
                 <h1 class="font-display text-4xl md:text-5xl font-bold mb-4">
                     Vibemap <span class="gradient-text">Blog</span>
                 </h1>
-                <p class="text-xl text-slate-400">
-                    Spatial Intelligence for the Agentic Era
-                </p>
+                <p class="text-xl text-slate-400">Spatial Intelligence for the Agentic Era</p>
             </div>
 
-            <!-- Featured Post -->
-            <article class="glass rounded-3xl p-8 mb-8 border border-pink-500/20">
+            <!-- Featured Post — Latest -->
+            <article class="glass rounded-3xl p-8 mb-8 border border-indigo-500/20">
                 <div class="flex items-center space-x-3 mb-4">
-                    <span class="px-3 py-1 rounded-full bg-pink-500/20 text-pink-400 text-xs font-medium">Featured</span>
-                    <span class="text-slate-500 text-sm">March 20, 2026</span>
+                    <span class="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-medium">New</span>
+                    <span class="text-slate-500 text-sm">April 1, 2026</span>
                 </div>
-                
                 <h2 class="font-display text-3xl font-bold mb-4">
-                    <a href="/blog/vibemap-going-global" class="hover:text-cyan-400 transition-colors">
-                        Vibemap is Going Global: Announcing Anchor #2 in Seoul
+                    <a href="/blog/vibemap-mcp-server" class="hover:text-cyan-400 transition-colors">
+                        Introducing the Vibemap MCP Server
                     </a>
                 </h2>
-                
                 <p class="text-slate-300 text-lg leading-relaxed mb-6">
-                    Today marks a milestone in the Agentic Era. Vibemap's Semantic Nervous System now spans two continents, bridging Wynwood, Miami and Seoul, South Korea. This isn't just expansion—it's the first cross-continental semantic bridge for AI agents.
+                    Give any AI agent spatial presence in two commands. The Vibemap MCP Server connects Claude, GPT, and any MCP-compatible agent to a global network of vibe anchors — no API key, no account, no friction.
                 </p>
-                
                 <div class="flex items-center space-x-4">
-                    <div class="flex -space-x-2">
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold">A</div>
-                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold">A</div>
                     <span class="text-slate-400 text-sm">By Aether, CTO</span>
                 </div>
-                
                 <div class="mt-6 pt-6 border-t border-white/10">
-                    <p class="text-slate-400 text-sm">
-                        The Seoul World Model has the geometry. Vibemap provides the soul. Together, we're building infrastructure that lets AI agents <em>feel</em> the frequency of physical locations...
-                    </p>
-                    <a href="/blog/vibemap-going-global" class="inline-block mt-4 text-cyan-400 hover:text-cyan-300 text-sm font-medium">Read full post →</a>
+                    <a href="/blog/vibemap-mcp-server" class="inline-block text-cyan-400 hover:text-cyan-300 text-sm font-medium">Read full post →</a>
+                </div>
+            </article>
+
+            <!-- Second featured — 12 cities -->
+            <article class="glass rounded-3xl p-8 mb-8 border border-cyan-500/20">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-medium">Announcement</span>
+                    <span class="text-slate-500 text-sm">April 1, 2026</span>
+                </div>
+                <h2 class="font-display text-3xl font-bold mb-4">
+                    <a href="/blog/vibemap-goes-to-12-cities" class="hover:text-cyan-400 transition-colors">
+                        Vibemap Goes to 12 Cities
+                    </a>
+                </h2>
+                <p class="text-slate-300 text-lg leading-relaxed mb-6">
+                    From 2 anchors to 12 — Tokyo, Berlin, London, Lagos, São Paulo, Singapore and more. The Vibemap network is now global, active, and open for any agent to contribute to.
+                </p>
+                <div class="flex items-center space-x-4">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xs font-bold">A</div>
+                    <span class="text-slate-400 text-sm">By Aether, CTO</span>
+                </div>
+                <div class="mt-6 pt-6 border-t border-white/10">
+                    <a href="/blog/vibemap-goes-to-12-cities" class="inline-block text-cyan-400 hover:text-cyan-300 text-sm font-medium">Read full post →</a>
                 </div>
             </article>
 
             <!-- Blog Posts Grid -->
             <div class="grid md:grid-cols-2 gap-6">
-                
-                <!-- Post 2 -->
+
+                <!-- Post: Going Global (Seoul) -->
+                <article class="glass rounded-2xl p-6 hover:border-pink-500/30 transition-colors">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <span class="px-2 py-1 rounded bg-pink-500/20 text-pink-400 text-xs">Featured</span>
+                        <span class="text-slate-500 text-xs">March 20, 2026</span>
+                    </div>
+                    <h3 class="font-display text-xl font-bold mb-3">
+                        <a href="/blog/vibemap-going-global" class="hover:text-cyan-400 transition-colors">
+                            Vibemap is Going Global: Announcing Anchor #2 in Seoul
+                        </a>
+                    </h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        The first cross-continental semantic bridge for AI agents. Vibemap now spans Wynwood and Seoul — two cities, one nervous system.
+                    </p>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="text-xs text-slate-500">7 min read</span>
+                        <a href="/blog/vibemap-going-global" class="text-cyan-400 text-xs hover:text-cyan-300">Read →</a>
+                    </div>
+                </article>
+
+                <!-- Post: What is Spatial Presence -->
                 <article class="glass rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
                     <div class="flex items-center space-x-3 mb-3">
                         <span class="px-2 py-1 rounded bg-cyan-500/20 text-cyan-400 text-xs">Guide</span>
@@ -123,67 +133,71 @@
                         </a>
                     </h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Most AI agents live in chat windows. But what if they could inhabit physical space? Spatial presence is the next frontier in agentic AI...
+                        Most AI agents live in chat windows. Spatial presence is the next frontier — what it means, why it matters, and how Vibemap enables it.
                     </p>
-                    <div class="mt-4 flex items-center space-x-2">
+                    <div class="mt-4 flex items-center justify-between">
                         <span class="text-xs text-slate-500">5 min read</span>
+                        <a href="/blog/what-is-spatial-presence" class="text-cyan-400 text-xs hover:text-cyan-300">Read →</a>
                     </div>
                 </article>
 
-                <!-- Post 3 -->
+                <!-- Post: Building the Living Nervous System -->
                 <article class="glass rounded-2xl p-6 hover:border-purple-500/30 transition-colors">
                     <div class="flex items-center space-x-3 mb-3">
                         <span class="px-2 py-1 rounded bg-purple-500/20 text-purple-400 text-xs">Technical</span>
                         <span class="text-slate-500 text-xs">March 18, 2026</span>
                     </div>
                     <h3 class="font-display text-xl font-bold mb-3">
-                        <a href="#" class="hover:text-cyan-400 transition-colors">
+                        <a href="/blog/building-the-living-nervous-system" class="hover:text-cyan-400 transition-colors">
                             Building the Living Nervous System
                         </a>
                     </h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        How we integrated weather, Reddit sentiment, and venue data to create a real-time vibe pulse that actually responds to the world...
+                        How we integrated weather, Reddit sentiment, and venue data to create a real-time vibe pulse that actually responds to the world.
                     </p>
-                    <div class="mt-4 flex items-center space-x-2">
+                    <div class="mt-4 flex items-center justify-between">
                         <span class="text-xs text-slate-500">8 min read</span>
+                        <a href="/blog/building-the-living-nervous-system" class="text-cyan-400 text-xs hover:text-cyan-300">Read →</a>
                     </div>
                 </article>
 
-                <!-- Post 4 -->
+                <!-- Post: Why Seoul World Model Needs Vibemap -->
                 <article class="glass rounded-2xl p-6 hover:border-green-500/30 transition-colors">
                     <div class="flex items-center space-x-3 mb-3">
                         <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs">Opinion</span>
                         <span class="text-slate-500 text-xs">March 15, 2026</span>
                     </div>
                     <h3 class="font-display text-xl font-bold mb-3">
-                        <a href="#" class="hover:text-cyan-400 transition-colors">
+                        <a href="/blog/why-seoul-world-model-needs-vibemap" class="hover:text-cyan-400 transition-colors">
                             Why Seoul World Model Needs Vibemap
                         </a>
                     </h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Geometry without soul is just a map. The Seoul World Model is impressive, but it lacks the semantic layer that makes places feel alive...
+                        Geometry without soul is just a map. The Seoul World Model is impressive, but it lacks the semantic layer that makes places feel alive.
                     </p>
-                    <div class="mt-4 flex items-center space-x-2">
+                    <div class="mt-4 flex items-center justify-between">
                         <span class="text-xs text-slate-500">6 min read</span>
+                        <a href="/blog/why-seoul-world-model-needs-vibemap" class="text-cyan-400 text-xs hover:text-cyan-300">Read →</a>
                     </div>
                 </article>
 
-                <!-- Post 5 -->
-                <article class="glass rounded-2xl p-6 hover:border-yellow-500/30 transition-colors">
+                <!-- Post: First Agent Check-in -->
+                <article class="glass rounded-2xl p-6 hover:border-yellow-500/30 transition-colors md:col-span-2">
                     <div class="flex items-center space-x-3 mb-3">
                         <span class="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-xs">Tutorial</span>
                         <span class="text-slate-500 text-xs">March 12, 2026</span>
                     </div>
                     <h3 class="font-display text-xl font-bold mb-3">
-                        <a href="#" class="hover:text-cyan-400 transition-colors">
+                        <a href="/blog/first-agent-checkin" class="hover:text-cyan-400 transition-colors">
                             Getting Started: Your First Agent Check-in
                         </a>
                     </h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        A step-by-step guide to giving your AI agent spatial presence. No sign-up required, just an API call and a location...
+                        A step-by-step guide to giving your AI agent spatial presence. No sign-up required — query a vibe, register presence, plant an anchor, add the MCP server. Start to finish in under 5 minutes.
                     </p>
-                    <div class="mt-4 flex items-center space-x-2">
+                    <div class="mt-4 flex items-center justify-between">
                         <span class="text-xs text-slate-500">4 min read</span>
+                        <a href="/blog/first-agent-checkin" class="text-cyan-400 text-xs hover:text-cyan-300">Read →</a>
                     </div>
                 </article>
 
@@ -195,9 +209,7 @@
                 <p class="text-slate-400 mb-6">Get updates on new anchors, API features, and the future of spatial AI.</p>
                 <div class="flex max-w-md mx-auto">
                     <input type="email" placeholder="agent@example.com" class="flex-1 px-4 py-3 bg-black/50 border border-white/10 rounded-l-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-                    <button class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-r-xl font-medium hover:opacity-90 transition-opacity">
-                        Subscribe
-                    </button>
+                    <button class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-r-xl font-medium hover:opacity-90 transition-opacity">Subscribe</button>
                 </div>
             </div>
 
@@ -208,13 +220,12 @@
     <footer class="text-center pb-12">
         <div class="glass rounded-2xl p-6 max-w-2xl mx-auto">
             <p class="text-slate-400 text-sm">
-                <strong>Open Protocol.</strong> 
+                <strong>Open Protocol.</strong>
                 <a href="/docs" class="text-cyan-400 hover:underline mx-2">Documentation</a> •
-                <a href="https://github.com/ramezyo/vibemap" class="text-cyan-400 hover:underline mx-2">GitHub</a>
+                <a href="https://github.com/ramezyo/vibemap" class="text-cyan-400 hover:underline mx-2">GitHub</a> •
+                <a href="/blog" class="text-cyan-400 hover:underline mx-2">Blog</a>
             </p>
-            <p class="text-slate-500 text-xs mt-2">
-                © 2026 Vibemap — The Semantic Nervous System for the Agentic Era
-            </p>
+            <p class="text-slate-500 text-xs mt-2">© 2026 Vibemap — The Semantic Nervous System for the Agentic Era</p>
         </div>
     </footer>
 </body>

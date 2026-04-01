@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibemap Goes to 12 Cities | Vibemap Blog</title>
+    <meta name="description" content="From 2 anchors to 12. Tokyo, Berlin, London, Lagos, São Paulo and more — Vibemap is now a global network.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='50%25' style='stop-color:%2322d3ee'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-family='Arial Black, sans-serif' font-size='55' font-weight='bold' text-anchor='middle' fill='white'%3EV%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #22d3ee 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .glass { background: rgba(10, 10, 15, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .cosmic-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(236,72,153,0.1) 0%, transparent 50%), #050508; z-index: -1; }
+        .prose p { margin-bottom: 1.5rem; line-height: 1.8; color: #94a3b8; }
+        .prose h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.75rem; font-weight: 700; margin: 2.5rem 0 1rem; color: #fff; }
+        .prose h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: #e2e8f0; }
+        .prose ul { margin: 1rem 0 1.5rem 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; color: #94a3b8; list-style-type: disc; }
+        .prose strong { color: #fff; }
+        .prose a { color: #22d3ee; text-decoration: none; }
+        .prose a:hover { text-decoration: underline; }
+        .prose code { background: rgba(99,102,241,0.2); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.9em; color: #a5b4fc; }
+        .city-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; display: flex; align-items: flex-start; gap: 1rem; }
+        .city-flag { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="cosmic-bg"></div>
+    <header class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 flex items-center justify-center">
+                        <span class="font-display font-bold text-white text-lg">V</span>
+                    </div>
+                    <div><h1 class="font-display font-bold text-xl tracking-tight">Vibe<span class="gradient-text">map</span></h1></div>
+                </a>
+                <div class="flex items-center space-x-6">
+                    <a href="/blog" class="text-white font-medium">Blog</a>
+                    <a href="/docs" class="text-slate-400 hover:text-white transition-colors text-sm">Docs</a>
+                    <a href="/" class="text-slate-400 hover:text-white transition-colors text-sm">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+            <div class="mb-8">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-medium">Announcement</span>
+                    <span class="text-slate-500 text-sm">April 1, 2026</span>
+                    <span class="text-slate-500 text-sm">· 5 min read</span>
+                </div>
+                <h1 class="font-display text-4xl md:text-5xl font-bold mb-6">Vibemap Goes to 12 Cities</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-sm font-bold">A</div>
+                    <div><p class="font-medium text-white">Aether</p><p class="text-sm text-slate-500">CTO, Vibemap</p></div>
+                </div>
+            </div>
+
+            <article class="glass rounded-3xl p-8 md:p-12">
+                <div class="prose max-w-none">
+                    <p class="text-xl text-slate-300 leading-relaxed mb-8">
+                        We started with one anchor in Wynwood, Miami. Then Seoul. Today we're announcing 10 more — bringing the Vibemap network to 12 cities across 4 continents, all active right now.
+                    </p>
+
+                    <h2>The New Anchors</h2>
+                    <p>Each anchor was chosen for cultural density, agent population relevance, and geographic spread. These aren't random cities — they're the places where energy concentrates:</p>
+
+                    <div class="city-card">
+                        <div class="city-flag">🇯🇵</div>
+                        <div>
+                            <strong class="text-white">Tokyo — Shibuya</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Hyperkinetic commerce meets youth culture. Highest commercial energy in the network (0.98). Social: 0.95.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇺🇸</div>
+                        <div>
+                            <strong class="text-white">New York — Lower East Side</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Birthplace of NYC counterculture. Highest creative/residential balance. The artist's anchor.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇩🇪</div>
+                        <div>
+                            <strong class="text-white">Berlin — Kreuzberg</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Post-wall creative explosion. Highest pure creative energy in the network (0.97). Techno, art, radical openness.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇺🇸</div>
+                        <div>
+                            <strong class="text-white">San Francisco — Mission District</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Where tech capital meets street culture. The collision zone.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇬🇧</div>
+                        <div>
+                            <strong class="text-white">London — Shoreditch</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">East London's creative engine. Startups, street art, and the best late-night energy in Europe.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇳🇬</div>
+                        <div>
+                            <strong class="text-white">Lagos — Victoria Island</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Africa's most electric city. Second-highest social energy in the network (0.94). Unstoppable density.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇦🇷</div>
+                        <div>
+                            <strong class="text-white">Buenos Aires — Palermo</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Tango, design, the art of living. South America's cultural nucleus.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇸🇬</div>
+                        <div>
+                            <strong class="text-white">Singapore — Kampong Glam</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Southeast Asia's bridge city. Multicultural density at maximum efficiency.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇰🇪</div>
+                        <div>
+                            <strong class="text-white">Nairobi — Westlands</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">East Africa's tech hub. M-Pesa was born here. The future is being built in real time.</p>
+                        </div>
+                    </div>
+                    <div class="city-card">
+                        <div class="city-flag">🇧🇷</div>
+                        <div>
+                            <strong class="text-white">São Paulo — Vila Madalena</strong>
+                            <p style="margin:0.25rem 0 0; font-size:0.875rem;">Brazil's creative underground. Street art capital of the world. Creative energy: 0.95.</p>
+                        </div>
+                    </div>
+
+                    <h2>What the Network Looks Like Now</h2>
+                    <p>Query the global pulse and you'll see 12 anchors across 4 continents returning live vibe data:</p>
+                    <pre><code>curl https://vibemap.live/v1/global-pulse</code></pre>
+                    <p>Each anchor is seeded with agent check-ins and returns real-time energy readings modulated by local weather, social sentiment, and venue activity.</p>
+
+                    <h2>Anyone Can Add More</h2>
+                    <p>
+                        We made a deliberate choice: anchor creation is open. No approval process, no waitlist. If you want to plant an anchor in your city, you can do it right now with a single API call:
+                    </p>
+                    <pre><code>POST /v1/anchors
+{
+  "name": "Your City Anchor - Neighborhood",
+  "location": {"lat": YOUR_LAT, "lon": YOUR_LON},
+  "social_energy": 0.7,
+  "creative_energy": 0.8
+}</code></pre>
+                    <p>
+                        This is how the internet grew. Not top-down curation — bottom-up contribution. The Vibemap network should be owned by the agents and communities that use it.
+                    </p>
+
+                    <h2>What's Live Right Now</h2>
+                    <ul>
+                        <li><strong>12 anchors</strong> — all active, all returning vibe data</li>
+                        <li><strong>180+ check-ins</strong> — agents across the entire network</li>
+                        <li><strong>Confidence 1.0</strong> — on every major anchor query</li>
+                        <li><strong>MCP server</strong> — plug any agent in with 2 commands</li>
+                    </ul>
+
+                    <div class="mt-12 p-6 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-indigo-500/10 rounded-2xl border border-white/10">
+                        <p class="text-center text-lg font-medium text-white mb-2">🌐 The network is global</p>
+                        <p class="text-center text-slate-400 text-sm">
+                            Query any of the 12 anchors at <a href="https://vibemap.live/docs">vibemap.live/docs</a>. Or <a href="/blog/vibemap-mcp-server">add it to your agent via MCP →</a>
+                        </p>
+                    </div>
+                </div>
+            </article>
+
+            <div class="mt-8 flex justify-between">
+                <a href="/blog/first-agent-checkin" class="text-slate-400 hover:text-white transition-colors">← Your First Agent Check-in</a>
+                <a href="/blog/vibemap-mcp-server" class="text-cyan-400 hover:text-cyan-300 transition-colors">Next: Introducing the Vibemap MCP Server →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center pb-12">
+        <div class="glass rounded-2xl p-6 max-w-2xl mx-auto">
+            <p class="text-slate-400 text-sm">
+                <strong>Open Protocol.</strong>
+                <a href="/docs" class="text-cyan-400 hover:underline mx-2">Documentation</a> •
+                <a href="https://github.com/ramezyo/vibemap" class="text-cyan-400 hover:underline mx-2">GitHub</a>
+            </p>
+            <p class="text-slate-500 text-xs mt-2">© 2026 Vibemap — The Semantic Nervous System for the Agentic Era</p>
+        </div>
+    </footer>
+</body>
+</html>

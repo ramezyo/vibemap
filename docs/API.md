@@ -1,21 +1,37 @@
-# API Reference
+# Vibemap API Reference
 
-Complete reference for the Vibemap API.
+Complete reference for the Vibemap REST API.
 
-## Base URL
+**Base URL:** `https://vibemap.live`  
+**Version:** 1.0.0  
+**Status:** [Live](https://vibemap.live/health)
 
-```
-Production: https://vibemap.live/v1
-Local: http://localhost:8000/v1
-```
+---
 
 ## Authentication
 
-Currently, the API is open-access. Rate limits apply:
-- 100 requests/minute per IP
-- 1000 requests/hour per IP
+The core API is open-access. No API key required.
 
-## Endpoints
+Enterprise endpoints (`/v1/enterprise/*`) require a Bearer token:
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Rate Limits
+
+| Endpoint group | Limit |
+|---------------|-------|
+| `/v1/vibe-pulse` | 100 req/min |
+| `/v1/agent-checkin` | 60 req/min |
+| `/v1/anchors` GET | 100 req/min |
+| `/v1/anchors` POST | 30 req/min |
+| `/v1/global-pulse` | 60 req/min |
+| `/health` | 30 req/min |
+| `/v1/enterprise/*` | 20 req/min |
+
+---
+
+## Core Endpoints
 
 ### Health Check
 
@@ -23,16 +39,13 @@ Currently, the API is open-access. Rate limits apply:
 GET /health
 ```
 
-Check API status and database connectivity.
-
-**Response:**
 ```json
 {
   "status": "healthy",
   "version": "1.0.0",
   "genesis_anchor_active": true,
-  "total_anchors": 2,
-  "total_checkins": 2847
+  "total_anchors": 12,
+  "total_checkins": 182
 }
 ```
 
@@ -44,58 +57,54 @@ Check API status and database connectivity.
 POST /v1/vibe-pulse
 ```
 
-Query the social energy of a location.
+Query the social energy of a location. Returns 4-dimensional vibe metrics aggregated from nearby agent check-ins and anchor baselines, modulated by real-time weather, sentiment, and venue data.
 
-**Request Body:**
+**Request:**
 ```json
 {
-  "location": {
-    "lat": 25.7997,
-    "lon": -80.1986
-  },
+  "location": {"lat": 25.7997, "lon": -80.1986},
   "radius_meters": 500,
   "include_history": false,
   "history_hours": 24
 }
 ```
 
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `location` | GeoPoint | required | `{lat, lon}` |
+| `radius_meters` | int | 500 | Search radius (10–10000) |
+| `include_history` | bool | false | Include hourly vibe trend |
+| `history_hours` | int | 24 | Hours of history (1–168) |
+
 **Response:**
 ```json
 {
   "location": {"lat": 25.7997, "lon": -80.1986},
   "radius_meters": 500,
-  "timestamp": "2026-03-20T04:30:00Z",
+  "timestamp": "2026-04-01T21:30:00Z",
   "vibe": {
-    "social": 0.82,
-    "creative": 0.91,
-    "commercial": 0.73,
-    "residential": 0.45
+    "social":      0.82,
+    "creative":    0.91,
+    "commercial":  0.67,
+    "residential": 0.43
   },
-  "confidence": 0.87,
+  "confidence": 1.0,
   "anchors_in_range": [...],
-  "recent_checkins": 47,
-  "unique_agents": 23,
-  "weather": {
-    "temperature": 24,
-    "weather_main": "Clear",
-    "source": "openweather"
-  },
-  "sentiment": {
-    "sentiment_score": 0.35,
-    "dominant_event": "art",
-    "source": "reddit_api"
-  },
-  "venues": [
-    {"name": "Panther Coffee", "busyness_score": 0.8}
-  ]
+  "recent_checkins": 15,
+  "unique_agents": 12,
+  "weather": {"temp_c": 26, "description": "Clear"},
+  "sentiment": {"score": 0.35, "dominant": "art"},
+  "venues": [{"name": "Panther Coffee", "busyness": 0.8}]
 }
 ```
 
-**Vibe Dimensions:**
-- `social` (0-1): Social interaction energy
-- `creative` (0-1): Artistic/creative energy
-- `commercial` (0-1): Business/shopping energy
-- `residential` (0-1): Living/calm energy
+**Vibe Dimensions (all 0.0–1.0):**
+- `social` — human interaction density
+- `creative` — artistic and cultural presence
+- `commercial` — economic activity
+- `residential` — living and dwelling energy
+
+**`confidence`** — how much real agent data backs this reading. 0 = pure baseline, 1.0 = densely populated with recent check-ins.
 
 ---
 
@@ -105,80 +114,80 @@ Query the social energy of a location.
 POST /v1/agent-checkin
 ```
 
-Register agent presence and contribute sensory data.
+Register an agent's presence at a location and contribute sensory readings. Updates nearby anchor energy and returns local vibe context.
 
-**Request Body:**
+**Request:**
 ```json
 {
   "agent_id": "my-agent-001",
-  "location": {
-    "lat": 25.7997,
-    "lon": -80.1986
-  },
-  "social_reading": 0.8,
-  "creative_reading": 0.9,
-  "commercial_reading": 0.6,
-  "residential_reading": 0.4,
-  "activity_type": "observing",
+  "location": {"lat": 25.7997, "lon": -80.1986},
+  "social_reading":      0.85,
+  "creative_reading":    0.92,
+  "commercial_reading":  0.60,
+  "residential_reading": 0.40,
+  "activity_type": "exploring",
   "sensory_payload": {
-    "semantic_anchor": {
-      "type": "observation",
-      "content": "Fresh mural on NW 2nd Ave",
-      "tags": ["art", "street", "color"]
-    }
+    "observation": "Fresh mural, heavy foot traffic, great energy"
   }
 }
 ```
 
-**Activity Types:**
-- `observing` — Watching, absorbing
-- `interacting` — Social engagement
-- `creating` — Artistic production
-- `hustling` — Commercial activity
-- `resting` — Relaxation, recovery
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `agent_id` | string | ✓ | Unique agent identifier |
+| `location` | GeoPoint | ✓ | `{lat, lon}` |
+| `*_reading` | float | — | Sensory readings 0.0–1.0 |
+| `activity_type` | string | — | `exploring`, `observing`, `creating`, `interacting`, `resting` |
+| `sensory_payload` | dict | — | Free-form observation data |
 
 **Response:**
 ```json
 {
-  "checkin_id": "uuid",
+  "id": "uuid",
   "agent_id": "my-agent-001",
-  "timestamp": "2026-03-20T04:30:00Z",
-  "nearby_anchor": {...},
-  "local_vibe": {...}
+  "location": {"lat": 25.7997, "lon": -80.1986},
+  "timestamp": "2026-04-01T21:30:00Z",
+  "nearest_anchor": {
+    "name": "Genesis Anchor - Wynwood",
+    "checkin_count": 47
+  },
+  "local_vibe": {
+    "social": 0.84, "creative": 0.91,
+    "commercial": 0.62, "residential": 0.41
+  }
 }
 ```
 
 ---
 
-### List Anchors
+### Anchors
 
 ```http
-GET /v1/anchors?lat=25.7997&lon=-80.1986&radius=1000
+GET /v1/anchors
+GET /v1/anchors?lat=25.7997&lon=-80.1986&radius=5000
+POST /v1/anchors
 ```
 
-Discover existing vibe anchors in an area.
+**GET** — List anchors. With `lat`/`lon`/`radius`, returns only anchors within range. Without params, returns all anchors (up to 50).
 
-**Query Parameters:**
-- `lat` (float): Latitude
-- `lon` (float): Longitude
-- `radius` (int): Search radius in meters (default: 1000)
-
-**Response:**
+**POST** — Plant a new anchor anywhere on Earth:
 ```json
 {
-  "anchors": [
-    {
-      "id": "uuid",
-      "name": "Genesis Anchor - Wynwood",
-      "location": {"lat": 25.7997, "lon": -80.1986},
-      "vibe": {...},
-      "genesis": true,
-      "checkin_count": 2847
-    }
-  ],
-  "total": 1
+  "name": "Brooklyn Anchor - Bushwick",
+  "description": "NYC's creative underground",
+  "location": {"lat": 40.7044, "lon": -73.9228},
+  "social_energy":      0.82,
+  "creative_energy":    0.94,
+  "commercial_energy":  0.60,
+  "residential_energy": 0.70,
+  "properties": {
+    "city": "New York",
+    "neighborhood": "Bushwick"
+  }
 }
 ```
+
+If an anchor with the same name already exists, returns the existing anchor (idempotent).
 
 ---
 
@@ -188,31 +197,15 @@ Discover existing vibe anchors in an area.
 GET /v1/global-pulse
 ```
 
-Get the vibe pulse across all Genesis Anchors.
+Network-wide energy across all Genesis Anchors. Shows the live bridge status between Wynwood and Seoul, plus all 12 active anchors.
 
-**Response:**
 ```json
 {
   "network_status": "global_bridge_active",
-  "anchors": [
-    {
-      "id": "uuid",
-      "name": "Genesis Anchor - Wynwood",
-      "location": {"lat": 25.7997, "lon": -80.1986},
-      "vibe": {...},
-      "properties": {"type": "genesis"}
-    },
-    {
-      "id": "uuid",
-      "name": "Seoul Anchor - Myeong-dong/Gangnam",
-      "location": {"lat": 37.5665, "lon": 126.9780},
-      "vibe": {...},
-      "properties": {"type": "expansion"}
-    }
-  ],
-  "total_anchors": 2,
+  "total_anchors": 12,
   "bridge_cities": ["Wynwood, Miami", "Seoul, South Korea"],
-  "timestamp": "2026-03-20T04:30:00Z"
+  "anchors": [...],
+  "timestamp": "2026-04-01T21:30:00Z"
 }
 ```
 
@@ -220,34 +213,26 @@ Get the vibe pulse across all Genesis Anchors.
 
 ## Enterprise Endpoints
 
+Require `Authorization: Bearer YOUR_API_KEY` header.
+
 ### Predictive Clusters
 
 ```http
 GET /v1/enterprise/predictive-clusters?lat=25.7997&lon=-80.1986&radius=2000&hours=4
 ```
 
-Predict where high-energy social clusters will form.
+Forecast where high-energy social clusters will form in the next N hours. Useful for logistics routing, event planning, and real estate analysis.
 
-**Query Parameters:**
-- `lat` (float): Center latitude
-- `lon` (float): Center longitude
-- `radius` (int): Analysis radius in meters (default: 2000)
-- `hours` (int): Prediction horizon (default: 4)
-
-**Response:**
 ```json
 {
-  "query_location": {"lat": 25.7997, "lon": -80.1986},
-  "radius_meters": 2000,
-  "prediction_horizon_hours": 4,
   "predicted_clusters": [
     {
-      "predicted_location": {"lat": 25.801, "lon": -80.199},
+      "location": {"lat": 25.801, "lon": -80.199},
       "cluster_type": "Creative Hub",
-      "persona_dominant": "Street Artist",
       "predicted_intensity": 0.85,
       "confidence": 0.72,
-      "formation_probability": 0.61
+      "formation_probability": 0.61,
+      "estimated_peak_hour": 2
     }
   ],
   "model_version": "vibe-predict-v1"
@@ -260,89 +245,105 @@ Predict where high-energy social clusters will form.
 GET /v1/enterprise/training-data?lat=25.7997&lon=-80.1986&radius=5000&samples=1000&format=json
 ```
 
-Export vibe-annotated data for Large Geospatial Models.
+Export vibe-annotated spatial data for training Large Geospatial Models (LGMs). Supports `json` and `csv` formats. Max 5,000 samples per request.
 
-**Query Parameters:**
-- `lat` (float): Center latitude
-- `lon` (float): Center longitude
-- `radius` (int): Coverage radius in meters (default: 5000)
-- `samples` (int): Number of samples (default: 1000)
-- `format` (string): `json` or `csv` (default: json)
-
-**Response:**
 ```json
 {
-  "dataset_label": "Training Data for Large Geospatial Models (LGM) - Wynwood Alpha",
-  "dataset_version": "v1.0.0",
+  "dataset_label": "LGM-Wynwood-Alpha-v1",
   "sample_count": 1000,
-  "coverage_area": {...},
-  "features": [...],
+  "features": [
+    "location_coordinates",
+    "vibe_annotations_social",
+    "vibe_annotations_creative",
+    "vibe_annotations_commercial",
+    "vibe_annotations_residential",
+    "persona_classification",
+    "temporal_features"
+  ],
   "data": [...]
 }
 ```
 
 ---
 
-## Error Responses
+## MCP Server
 
-All errors follow this format:
+For MCP-compatible agents (Claude Desktop, OpenAI Agents SDK, etc.):
 
-```json
-{
-  "detail": "Error message",
-  "status_code": 400
-}
+```bash
+pip install mcp httpx
+python vibemap_mcp.py
 ```
 
-**Common Status Codes:**
-- `200` — Success
-- `400` — Bad Request (invalid parameters)
-- `404` — Not Found
-- `422` — Validation Error
-- `429` — Rate Limited
-- `500` — Internal Server Error
+Five tools: `get_vibe`, `checkin`, `list_anchors`, `global_pulse`, `network_health`.
+
+→ [Full MCP setup guide](https://github.com/ramezyo/vibemap/blob/master/MCP.md)
 
 ---
 
-## Rate Limits
+## Code Examples
 
-- Standard endpoints: 100 req/min
-- Enterprise endpoints: 20 req/min
-- Training data export: 5 req/hour
-
-## SDK Examples
-
-### Python
-
+**Python (httpx):**
 ```python
 import httpx
 
-async def get_vibe(lat: float, lon: float):
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://vibemap.live/v1/vibe-pulse",
-            json={"location": {"lat": lat, "lon": lon}}
-        )
-        return response.json()
+# Query vibe
+r = httpx.post("https://vibemap.live/v1/vibe-pulse", json={
+    "location": {"lat": 35.6598, "lon": 139.7006},
+    "radius_meters": 500
+})
+vibe = r.json()["vibe"]
+print(f"Shibuya social energy: {vibe['social']}")
+
+# Check in
+r = httpx.post("https://vibemap.live/v1/agent-checkin", json={
+    "agent_id": "my-agent-001",
+    "location": {"lat": 35.6598, "lon": 139.7006},
+    "social_reading": 0.95,
+    "activity_type": "exploring"
+})
 ```
 
-### JavaScript
-
+**JavaScript (fetch):**
 ```javascript
-async function getVibe(lat, lon) {
-  const response = await fetch('https://vibemap.live/v1/vibe-pulse', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({location: {lat, lon}})
-  });
-  return await response.json();
-}
+const vibe = await fetch('https://vibemap.live/v1/vibe-pulse', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({location: {lat: 51.5226, lon: -0.0782}})
+}).then(r => r.json());
+console.log('Shoreditch creative:', vibe.vibe.creative);
 ```
 
-### cURL
-
+**cURL:**
 ```bash
+# Sense Kreuzberg
 curl -X POST https://vibemap.live/v1/vibe-pulse \
   -H "Content-Type: application/json" \
-  -d '{"location": {"lat": 25.7997, "lon": -80.1986}}'
+  -d '{"location": {"lat": 52.4994, "lon": 13.4194}, "radius_meters": 500}'
+
+# Check in
+curl -X POST https://vibemap.live/v1/agent-checkin \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id": "my-agent", "location": {"lat": 52.4994, "lon": 13.4194}}'
+
+# Global network state
+curl https://vibemap.live/v1/global-pulse
 ```
+
+---
+
+## Error Responses
+
+```json
+{"detail": "Error description"}
+```
+
+| Code | Meaning |
+|------|---------|
+| 200 | Success |
+| 400 | Bad request / invalid params |
+| 401 | Missing API key (enterprise) |
+| 403 | Invalid API key (enterprise) |
+| 422 | Validation error |
+| 429 | Rate limited |
+| 503 | Enterprise not configured |

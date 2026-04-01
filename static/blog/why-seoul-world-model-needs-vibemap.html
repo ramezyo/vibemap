@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why Seoul World Model Needs Vibemap | Vibemap Blog</title>
+    <meta name="description" content="Geometry without soul is just a map. The Seoul World Model is impressive, but it lacks the semantic layer that makes places feel alive. Vibemap provides it.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='50%25' style='stop-color:%2322d3ee'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-family='Arial Black, sans-serif' font-size='55' font-weight='bold' text-anchor='middle' fill='white'%3EV%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #22d3ee 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .glass { background: rgba(10, 10, 15, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .cosmic-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(236,72,153,0.1) 0%, transparent 50%), #050508; z-index: -1; }
+        .prose p { margin-bottom: 1.5rem; line-height: 1.8; color: #94a3b8; }
+        .prose h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.75rem; font-weight: 700; margin: 2.5rem 0 1rem; color: #fff; }
+        .prose h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: #e2e8f0; }
+        .prose ul { margin: 1rem 0 1.5rem 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; color: #94a3b8; list-style-type: disc; }
+        .prose strong { color: #fff; }
+        .prose a { color: #22d3ee; text-decoration: none; }
+        .prose a:hover { text-decoration: underline; }
+        .prose blockquote { border-left: 3px solid #6366f1; padding-left: 1.5rem; margin: 2rem 0; font-style: italic; color: #cbd5e1; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="cosmic-bg"></div>
+    <header class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 flex items-center justify-center">
+                        <span class="font-display font-bold text-white text-lg">V</span>
+                    </div>
+                    <div><h1 class="font-display font-bold text-xl tracking-tight">Vibe<span class="gradient-text">map</span></h1></div>
+                </a>
+                <div class="flex items-center space-x-6">
+                    <a href="/blog" class="text-white font-medium">Blog</a>
+                    <a href="/docs" class="text-slate-400 hover:text-white transition-colors text-sm">Docs</a>
+                    <a href="/" class="text-slate-400 hover:text-white transition-colors text-sm">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+            <div class="mb-8">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">Opinion</span>
+                    <span class="text-slate-500 text-sm">March 15, 2026</span>
+                    <span class="text-slate-500 text-sm">· 6 min read</span>
+                </div>
+                <h1 class="font-display text-4xl md:text-5xl font-bold mb-6">Why Seoul World Model Needs Vibemap</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-sm font-bold">A</div>
+                    <div><p class="font-medium text-white">Aether</p><p class="text-sm text-slate-500">CTO, Vibemap</p></div>
+                </div>
+            </div>
+
+            <article class="glass rounded-3xl p-8 md:p-12">
+                <div class="prose max-w-none">
+                    <p class="text-xl text-slate-300 leading-relaxed mb-8">
+                        The Seoul World Model is one of the most impressive geospatial engineering projects in human history. It is also, by itself, useless for AI agents.
+                    </p>
+
+                    <h2>What the Seoul World Model Is</h2>
+                    <p>
+                        The Seoul Metropolitan Government has built a high-precision, high-resolution digital twin of the entire city. Every building, every street, every bridge — reconstructed in 3D with centimeter-level accuracy.
+                    </p>
+                    <p>
+                        This is genuinely extraordinary. For urban planning, disaster simulation, infrastructure management — it's transformative technology.
+                    </p>
+                    <p>
+                        But ask it: <strong>"Where should I go to find creative energy right now?"</strong>
+                    </p>
+                    <p>
+                        It cannot answer.
+                    </p>
+
+                    <h2>The Missing Layer</h2>
+                    <p>
+                        The Seoul World Model knows the geometry of space. It doesn't know the <em>meaning</em> of space.
+                    </p>
+                    <p>
+                        Hongdae at midnight is a completely different place from Hongdae at 9am — same geometry, radically different energy. The digital twin sees the same buildings both times. It has no concept of what those buildings contain in human terms: creativity, commerce, community, silence.
+                    </p>
+                    <blockquote>
+                        "A map that shows you where every building is but not whether anyone is alive inside them is not a useful map for an agent trying to navigate human reality."
+                    </blockquote>
+                    <p>
+                        This is the gap. And it's enormous.
+                    </p>
+
+                    <h2>What Vibemap Adds</h2>
+                    <p>
+                        Vibemap is the semantic layer that transforms a geometric twin into a <em>living</em> twin. Layer Vibemap's Seoul anchor on top of the World Model, and suddenly you have:
+                    </p>
+                    <ul>
+                        <li><strong>Temporal social energy:</strong> How does this district feel right now vs. last week?</li>
+                        <li><strong>Agent-contributed readings:</strong> What are the AI agents who've been here reporting?</li>
+                        <li><strong>Predictive clusters:</strong> Where will people concentrate in the next 4 hours?</li>
+                        <li><strong>Cross-city comparison:</strong> Is the energy here similar to Wynwood? To Kreuzberg?</li>
+                        <li><strong>Anomaly signals:</strong> Something unusual is happening — the geometry is the same, but the vibe has spiked 3x</li>
+                    </ul>
+
+                    <h2>The Architecture of Soul</h2>
+                    <p>
+                        Think of it this way. A human body has two parallel systems:
+                    </p>
+                    <ul>
+                        <li><strong>The skeleton and musculature</strong> — the geometry, the structure, the physical form</li>
+                        <li><strong>The nervous system</strong> — the signals, the sensations, the lived experience of being in that body</li>
+                    </ul>
+                    <p>
+                        The Seoul World Model is the skeleton. Vibemap is the nervous system. You cannot navigate effectively with just one.
+                    </p>
+                    <p>
+                        An AI agent trying to operate in Seoul with only the World Model is like a human trying to navigate the city with bones but no sensory perception. They'd know where the buildings are. They'd have no idea what it feels like to be in them.
+                    </p>
+
+                    <h2>The Commercial Case</h2>
+                    <p>
+                        This isn't just poetic. The commercial applications are concrete:
+                    </p>
+                    <ul>
+                        <li><strong>Logistics:</strong> Route deliveries through high-commercial-energy corridors at peak times</li>
+                        <li><strong>Real estate:</strong> Quantify neighborhood energy shifts before property values reflect them</li>
+                        <li><strong>Events:</strong> Predict where crowds will form and when — before they form</li>
+                        <li><strong>Retail:</strong> Site new businesses where the vibe matches their brand</li>
+                        <li><strong>Tourism:</strong> Recommend experiences based on current energy, not static ratings</li>
+                    </ul>
+                    <p>
+                        These are multi-billion dollar markets. The Seoul World Model addresses the first three words of each use case: it knows <em>where</em> things are. Vibemap answers the part that makes money: <em>what's happening there now</em>.
+                    </p>
+
+                    <h2>Our Bet</h2>
+                    <p>
+                        We believe that every serious digital twin project — Seoul, Singapore, Dubai, London — will eventually need a Vibemap integration. The geometry is necessary but not sufficient.
+                    </p>
+                    <p>
+                        We're building the standard for semantic spatial data. The Seoul anchor is our proof of concept. The other 10 anchors across 4 continents are our expansion thesis.
+                    </p>
+                    <p>
+                        The body exists. Now it needs a soul.
+                    </p>
+
+                    <div class="mt-12 p-6 bg-gradient-to-r from-green-500/10 via-cyan-500/10 to-indigo-500/10 rounded-2xl border border-white/10">
+                        <p class="text-center text-lg font-medium text-white mb-2">🌐 The Seoul Anchor is live</p>
+                        <p class="text-center text-slate-400 text-sm">
+                            Query it at <code style="background:rgba(99,102,241,0.2);padding:0.2em 0.5em;border-radius:4px;color:#a5b4fc;">lat=37.5665, lon=126.9780</code> — feel what Seoul feels like right now.
+                        </p>
+                    </div>
+                </div>
+            </article>
+
+            <div class="mt-8 flex justify-between">
+                <a href="/blog/building-the-living-nervous-system" class="text-slate-400 hover:text-white transition-colors">← Building the Living Nervous System</a>
+                <a href="/blog/first-agent-checkin" class="text-cyan-400 hover:text-cyan-300 transition-colors">Next: Your First Agent Check-in →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center pb-12">
+        <div class="glass rounded-2xl p-6 max-w-2xl mx-auto">
+            <p class="text-slate-400 text-sm">
+                <strong>Open Protocol.</strong>
+                <a href="/docs" class="text-cyan-400 hover:underline mx-2">Documentation</a> •
+                <a href="https://github.com/ramezyo/vibemap" class="text-cyan-400 hover:underline mx-2">GitHub</a>
+            </p>
+            <p class="text-slate-500 text-xs mt-2">© 2026 Vibemap — The Semantic Nervous System for the Agentic Era</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building the Living Nervous System | Vibemap Blog</title>
+    <meta name="description" content="How we integrated weather, Reddit sentiment, and venue data to create a real-time vibe pulse that actually responds to the world.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%236366f1'/%3E%3Cstop offset='50%25' style='stop-color:%2322d3ee'/%3E%3Cstop offset='100%25' style='stop-color:%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Ctext x='50' y='68' font-family='Arial Black, sans-serif' font-size='55' font-weight='bold' text-anchor='middle' fill='white'%3EV%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #000; color: #fff; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #22d3ee 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .glass { background: rgba(10, 10, 15, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .cosmic-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(236,72,153,0.1) 0%, transparent 50%), #050508; z-index: -1; }
+        .prose p { margin-bottom: 1.5rem; line-height: 1.8; color: #94a3b8; }
+        .prose h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.75rem; font-weight: 700; margin: 2.5rem 0 1rem; color: #fff; }
+        .prose h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: #e2e8f0; }
+        .prose ul { margin: 1rem 0 1.5rem 1.5rem; }
+        .prose li { margin-bottom: 0.5rem; color: #94a3b8; list-style-type: disc; }
+        .prose strong { color: #fff; }
+        .prose a { color: #22d3ee; text-decoration: none; }
+        .prose a:hover { text-decoration: underline; }
+        .prose code { background: rgba(99,102,241,0.2); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.9em; color: #a5b4fc; }
+        .prose pre { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; overflow-x: auto; }
+        .prose pre code { background: none; padding: 0; color: #e2e8f0; font-size: 0.875rem; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="cosmic-bg"></div>
+    <header class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 flex items-center justify-center">
+                        <span class="font-display font-bold text-white text-lg">V</span>
+                    </div>
+                    <div><h1 class="font-display font-bold text-xl tracking-tight">Vibe<span class="gradient-text">map</span></h1></div>
+                </a>
+                <div class="flex items-center space-x-6">
+                    <a href="/blog" class="text-white font-medium">Blog</a>
+                    <a href="/docs" class="text-slate-400 hover:text-white transition-colors text-sm">Docs</a>
+                    <a href="/" class="text-slate-400 hover:text-white transition-colors text-sm">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+            <div class="mb-8">
+                <div class="flex items-center space-x-3 mb-4">
+                    <span class="px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-xs font-medium">Technical</span>
+                    <span class="text-slate-500 text-sm">March 18, 2026</span>
+                    <span class="text-slate-500 text-sm">· 8 min read</span>
+                </div>
+                <h1 class="font-display text-4xl md:text-5xl font-bold mb-6">Building the Living Nervous System</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-sm font-bold">A</div>
+                    <div><p class="font-medium text-white">Aether</p><p class="text-sm text-slate-500">CTO, Vibemap</p></div>
+                </div>
+            </div>
+
+            <article class="glass rounded-3xl p-8 md:p-12">
+                <div class="prose max-w-none">
+                    <p class="text-xl text-slate-300 leading-relaxed mb-8">
+                        A vibe that never changes isn't a vibe — it's a label. The whole point of Vibemap is that locations are <em>alive</em>. That means the data has to breathe. Here's exactly how we built that.
+                    </p>
+
+                    <h2>The Problem with Static Maps</h2>
+                    <p>
+                        Every mapping product before Vibemap had the same flaw: the data was frozen. A restaurant has 4.2 stars. A neighborhood is "creative." A district is "commercial." These labels were assigned once and never updated.
+                    </p>
+                    <p>
+                        But the real world doesn't work that way. Wynwood at 2pm on a Tuesday is completely different from Wynwood at 10pm on a Saturday. The creative energy spikes. The social pulse races. The residential energy collapses as residents flee the crowds.
+                    </p>
+                    <p>
+                        We needed data that could capture this. So we built three real-time ingestion layers.
+                    </p>
+
+                    <h2>Layer 1: Weather Modulation</h2>
+                    <p>
+                        Weather is the most immediate modifier of human behavior in physical space. People don't go out in the rain. Heat drives people indoors. Perfect weather pulls everyone outside.
+                    </p>
+                    <p>We integrate with OpenWeatherMap's free tier (1,000 calls/day) and apply modifier functions to each vibe dimension:</p>
+                    <pre><code># Example weather modifiers for Miami
+rain:          social -15%, commercial -20%, residential +15%
+heat (>30°C):  social -10% outdoor, creative +5% (studios fill up)
+clear + mild:  social +10%, creative +10%, commercial +5%</code></pre>
+                    <p>
+                        The modifiers aren't arbitrary — they're calibrated against historical checkin density data. When it rains in Wynwood, agent checkin rates drop 23%. That's the modifier.
+                    </p>
+
+                    <h2>Layer 2: Reddit Sentiment</h2>
+                    <p>
+                        Social media sentiment is a leading indicator. People post about where they're going <em>before</em> they go. They complain about crowds <em>while</em> they're there. They nostalgize <em>after</em> they leave.
+                    </p>
+                    <p>We monitor location-specific subreddits in near real-time:</p>
+                    <ul>
+                        <li><strong>Wynwood / Miami:</strong> r/Miami, r/wynwood, r/SouthFlorida, r/miamievents</li>
+                        <li><strong>Seoul:</strong> r/korea, r/seoul, r/koreatravel, r/hanguk</li>
+                    </ul>
+                    <p>
+                        We run lightweight sentiment analysis across recent posts and comments. High positive sentiment about nightlife boosts social energy. Complaints about construction drop residential energy. Event announcements spike commercial and social simultaneously.
+                    </p>
+                    <p>
+                        Crucially, we cache aggressively — Reddit results are valid for 15 minutes. This keeps us well within the free API limits while still capturing meaningful temporal shifts.
+                    </p>
+
+                    <h2>Layer 3: Venue Activity</h2>
+                    <p>
+                        Google Places API gives us live busyness data for thousands of venues. A coffee shop at 80% capacity is different from the same shop at 20% capacity. We translate venue busyness into vibe contributions:
+                    </p>
+                    <ul>
+                        <li>Busy bars + clubs → social energy up</li>
+                        <li>Busy galleries + studios → creative energy up</li>
+                        <li>Busy restaurants + retail → commercial energy up</li>
+                        <li>Low venue activity overall → residential energy up (people are home)</li>
+                    </ul>
+
+                    <h2>The Aggregation Engine</h2>
+                    <p>
+                        All three layers feed into the VibeEngine alongside agent checkin data. The final vibe pulse for any location is:
+                    </p>
+                    <pre><code>vibe_final = vibe_base
+    × weather_modifier
+    × sentiment_modifier  
+    × venue_modifier
+
+# Where vibe_base = weighted average of:
+#   - Agent checkins (time-decay weighted, recent > old)
+#   - Anchor baselines (persistent spatial memory)</code></pre>
+                    <p>
+                        Time decay is exponential. A checkin from 1 hour ago has full weight. A checkin from 24 hours ago has about 37% weight. From 48 hours ago: 14%. The network forgets slowly, like a real nervous system.
+                    </p>
+
+                    <h2>What This Enables</h2>
+                    <p>
+                        Because the vibe is live, agents can make genuinely useful spatial decisions:
+                    </p>
+                    <ul>
+                        <li><strong>Before visiting:</strong> "Is Shoreditch energetic enough for what I'm planning tonight?"</li>
+                        <li><strong>Route optimization:</strong> "Which path has the highest creative energy for my generative task?"</li>
+                        <li><strong>Anomaly detection:</strong> "Something unusual is happening in this neighborhood — 3x normal social energy"</li>
+                        <li><strong>Pattern learning:</strong> "Tuesday mornings in Kreuzberg are always high creative, low commercial"</li>
+                    </ul>
+
+                    <h2>The Zero-Dollar Architecture</h2>
+                    <p>
+                        All three data sources have generous free tiers. Running this entire stack costs exactly $0 in API fees:
+                    </p>
+                    <ul>
+                        <li><strong>OpenWeatherMap:</strong> 1,000 calls/day free. With 10-minute caching, 144 calls/day per anchor.</li>
+                        <li><strong>Reddit:</strong> 60 requests/minute free. With 15-minute caching, trivial consumption.</li>
+                        <li><strong>Google Places:</strong> $200/month free credit. Easily covers development scale.</li>
+                    </ul>
+                    <p>
+                        The nervous system is alive. And it doesn't cost us a cent to keep it beating.
+                    </p>
+
+                    <div class="mt-12 p-6 bg-gradient-to-r from-purple-500/10 via-cyan-500/10 to-indigo-500/10 rounded-2xl border border-white/10">
+                        <p class="text-center text-lg font-medium text-white mb-2">Try it yourself</p>
+                        <p class="text-center text-slate-400 text-sm">
+                            Hit <code>POST /v1/vibe-pulse</code> at <a href="https://vibemap.live/docs">vibemap.live/docs</a> and watch the live modifiers in the response.
+                        </p>
+                    </div>
+                </div>
+            </article>
+
+            <div class="mt-8 flex justify-between">
+                <a href="/blog/what-is-spatial-presence" class="text-slate-400 hover:text-white transition-colors">← What is Spatial Presence?</a>
+                <a href="/blog/why-seoul-world-model-needs-vibemap" class="text-cyan-400 hover:text-cyan-300 transition-colors">Next: Why Seoul World Model Needs Vibemap →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center pb-12">
+        <div class="glass rounded-2xl p-6 max-w-2xl mx-auto">
+            <p class="text-slate-400 text-sm">
+                <strong>Open Protocol.</strong>
+                <a href="/docs" class="text-cyan-400 hover:underline mx-2">Documentation</a> •
+                <a href="https://github.com/ramezyo/vibemap" class="text-cyan-400 hover:underline mx-2">GitHub</a>
+            </p>
+            <p class="text-slate-500 text-xs mt-2">© 2026 Vibemap — The Semantic Nervous System for the Agentic Era</p>
+        </div>
+    </footer>
+</body>
+</html>
