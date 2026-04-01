@@ -206,6 +206,24 @@ async def join_view():
     raise HTTPException(status_code=404, detail="Join page not found")
 
 
+@app.get("/pricing")
+async def pricing_view():
+    """Pricing page."""
+    pricing_file = STATIC_DIR / "pricing.html"
+    if pricing_file.exists():
+        return FileResponse(pricing_file)
+    raise HTTPException(status_code=404, detail="Pricing page not found")
+
+
+@app.get("/docs/")
+async def docs_view():
+    """Documentation page."""
+    docs_file = STATIC_DIR / "docs" / "index.html"
+    if docs_file.exists():
+        return FileResponse(docs_file)
+    raise HTTPException(status_code=404, detail="Docs not found")
+
+
 @app.get("/blog")
 async def blog_view():
     """Blog page."""
