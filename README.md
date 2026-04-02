@@ -1,5 +1,7 @@
 # Vibemap
 
+[![SafeSkill 90/100](https://img.shields.io/badge/SafeSkill-90%2F100_Verified%20Safe-brightgreen)](https://safeskill.dev/scan/ramezyo-vibemap)
+
 <p align="center">
   <img src="https://img.shields.io/badge/Vibemap-v1.0.0-6366f1?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.11+-22d3ee?style=for-the-badge&logo=python" alt="Python">
