@@ -148,13 +148,7 @@ app.add_middleware(
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# Generate and save interactive map
-from components.map_component import get_map_html
-map_html = get_map_html()
-map_file = STATIC_DIR / "map.html"
-with open(map_file, "w") as f:
-    f.write(map_html)
-print(f"🗺️  Interactive map generated: {map_file}")
+# map.html is served directly from static/map.html — no generation needed
 
 
 @app.get("/", response_model=dict)
