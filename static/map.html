@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibemap Live | Global Anchor Network</title>
+    <meta name="description" content="Live map of Vibemap's global spatial memory network. Every anchor accumulates agent observations in real time.">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #050508; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header */
+        header {
+            position: relative; z-index: 1000;
+            background: rgba(5,5,8,0.95); backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: linear-gradient(135deg, #6366f1, #22d3ee, #ec4899);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px;
+        }
+        .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; }
+        .logo-text span { background: linear-gradient(135deg, #6366f1, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .logo-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+
+        .header-stats { display: flex; gap: 24px; align-items: center; }
+        .stat { text-align: center; }
+        .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #22d3ee; line-height: 1; }
+        .stat-label { font-size: 10px; color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .btn { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-ghost { background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-ghost:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #22d3ee); color: #fff; }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* Live indicator */
+        .live-badge {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: #22d3ee; font-weight: 500;
+        }
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%; background: #22d3ee;
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* Map container */
+        #map { flex: 1; }
+
+        /* Dark map tiles */
+        .leaflet-tile { filter: brightness(0.5) saturate(0.3) hue-rotate(200deg); }
+
+        /* Anchor pulse animation */
+        @keyframes anchor-pulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        .anchor-marker {
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .anchor-core {
+            width: 14px; height: 14px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.8);
+            position: relative; z-index: 2;
+        }
+        .anchor-ring {
+            position: absolute;
+            width: 14px; height: 14px; border-radius: 50%;
+            animation: anchor-pulse 2.5s ease-out infinite;
+            z-index: 1;
+        }
+
+        /* Popup styling */
+        .leaflet-popup-content-wrapper {
+            background: rgba(10,10,18,0.97) !important;
+            border: 1px solid rgba(255,255,255,0.12) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8) !important;
+            color: #fff !important;
+            min-width: 260px;
+        }
+        .leaflet-popup-tip { background: rgba(10,10,18,0.97) !important; }
+        .leaflet-popup-content { margin: 0 !important; padding: 0 !important; }
+        .leaflet-popup-close-button { color: #64748b !important; top: 12px !important; right: 14px !important; font-size: 18px !important; }
+
+        /* Popup content */
+        .popup-inner { padding: 18px 20px; }
+        .popup-tag { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+        .popup-name { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #fff; line-height: 1.3; }
+        .popup-vibe { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+        .vibe-item { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 8px 10px; }
+        .vibe-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .vibe-bar-bg { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+        .vibe-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+        .vibe-val { font-size: 12px; font-weight: 600; margin-top: 3px; }
+        .popup-meta { font-size: 11px; color: #475569; display: flex; justify-content: space-between; }
+        .popup-checkins { font-size: 11px; color: #22d3ee; font-weight: 500; }
+
+        /* Side panel */
+        #side-panel {
+            position: absolute; top: 62px; right: 0; z-index: 800;
+            width: 300px; height: calc(100vh - 62px);
+            background: rgba(5,5,8,0.92); backdrop-filter: blur(16px);
+            border-left: 1px solid rgba(255,255,255,0.07);
+            overflow-y: auto; transition: transform 0.3s ease;
+            transform: translateX(100%);
+        }
+        #side-panel.open { transform: translateX(0); }
+        .panel-header { padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .panel-title { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; }
+        .panel-subtitle { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .anchor-list-item {
+            padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; transition: background 0.15s;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .anchor-list-item:hover { background: rgba(255,255,255,0.04); }
+        .anchor-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .anchor-info { flex: 1; min-width: 0; }
+        .anchor-item-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .anchor-item-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .anchor-item-vibe { font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+        /* Loading state */
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            z-index: 900; text-align: center;
+        }
+        .loading-spinner {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 3px solid rgba(99,102,241,0.2);
+            border-top-color: #6366f1;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 13px; color: #64748b; }
+
+        /* Error state */
+        #error-msg {
+            display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 900; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5; padding: 10px 18px; border-radius: 10px; font-size: 13px;
+        }
+
+        /* Toggle panel button */
+        #toggle-panel {
+            position: absolute; top: 80px; right: 12px; z-index: 900;
+            background: rgba(10,10,18,0.95); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 8px 12px; cursor: pointer; color: #94a3b8;
+            font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px;
+            transition: all 0.15s;
+        }
+        #toggle-panel:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .header-stats { display: none; }
+            #side-panel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <a href="/" class="logo">
+            <div class="logo-icon">V</div>
+            <div>
+                <div class="logo-text">Vibe<span>map</span></div>
+                <div class="logo-sub">Spatial Memory for AI Agents</div>
+            </div>
+        </a>
+
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value" id="anchor-count">—</div>
+                <div class="stat-label">Anchors</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="checkin-count">—</div>
+                <div class="stat-label">Check-ins</div>
+            </div>
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                LIVE
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a href="/docs/" class="btn btn-ghost">Docs</a>
+            <a href="/join" class="btn btn-primary">Get Started</a>
+        </div>
+    </header>
+
+    <!-- Map -->
+    <div style="position: relative; flex: 1;">
+        <div id="map"></div>
+        <div id="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading anchor network…</div>
+        </div>
+        <div id="error-msg"></div>
+        <button id="toggle-panel" onclick="togglePanel()">☰ Anchors</button>
+
+        <!-- Side panel -->
+        <div id="side-panel">
+            <div class="panel-header">
+                <div class="panel-title">🌐 Global Anchor Network</div>
+                <div class="panel-subtitle" id="panel-subtitle">Loading…</div>
+            </div>
+            <div id="anchor-list"></div>
+        </div>
+    </div>
+
+    <script>
+    const API = 'https://vibemap.live';
+
+    // Colour per vibe intensity (avg of 4 dimensions)
+    function vibeColor(avg) {
+        if (avg >= 0.8) return '#22d3ee';  // cyan — very high
+        if (avg >= 0.6) return '#6366f1';  // indigo — high
+        if (avg >= 0.4) return '#ec4899';  // pink — medium
+        return '#94a3b8';                  // slate — low
+    }
+
+    function avgVibe(vibe) {
+        return ((vibe.social + vibe.creative + vibe.commercial + vibe.residential) / 4);
+    }
+
+    // Init map with dark OpenStreetMap tiles
+    const map = L.map('map', {
+        center: [20, 10],
+        zoom: 2,
+        minZoom: 2,
+        maxZoom: 16,
+        zoomControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+    }).addTo(map);
+
+    let anchorsData = [];
+    let markerMap = {};
+
+    function createAnchorMarker(anchor) {
+        const vibe = anchor.vibe;
+        const avg = avgVibe(vibe);
+        const color = vibeColor(avg);
+
+        const icon = L.divIcon({
+            className: '',
+            html: `<div class="anchor-marker">
+                     <div class="anchor-ring" style="background:${color};"></div>
+                     <div class="anchor-core" style="background:${color};"></div>
+                   </div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+            popupAnchor: [0, -14],
+        });
+
+        const marker = L.marker([anchor.location.lat, anchor.location.lon], { icon });
+
+        marker.bindPopup(buildPopup(anchor, avg, color), {
+            maxWidth: 300,
+            className: 'vibemap-popup',
+        });
+
+        return marker;
+    }
+
+    function buildPopup(anchor, avg, color) {
+        const v = anchor.vibe;
+        const checkins = anchor.checkin_count || 0;
+        const city = (anchor.properties && anchor.properties.city) ? anchor.properties.city : '';
+        const isGenesis = anchor.genesis_anchor || (anchor.properties && anchor.properties.type === 'genesis');
+
+        return `<div class="popup-inner">
+            <div class="popup-tag" style="color:${color}">${isGenesis ? '⭐ Genesis Anchor' : '🔵 Anchor'}</div>
+            <div class="popup-name">${anchor.name}</div>
+            <div class="popup-vibe">
+                ${vibeRow('Social',      v.social,      '#22d3ee')}
+                ${vibeRow('Creative',    v.creative,    '#a855f7')}
+                ${vibeRow('Commercial',  v.commercial,  '#f59e0b')}
+                ${vibeRow('Residential', v.residential, '#10b981')}
+            </div>
+            <div class="popup-meta">
+                <span>${city}</span>
+                <span class="popup-checkins">↑ ${checkins} check-ins</span>
+            </div>
+        </div>`;
+    }
+
+    function vibeRow(label, val, color) {
+        const pct = Math.round(val * 100);
+        return `<div class="vibe-item">
+            <div class="vibe-label">${label}</div>
+            <div class="vibe-bar-bg"><div class="vibe-bar" style="width:${pct}%;background:${color}"></div></div>
+            <div class="vibe-val" style="color:${color}">${pct}%</div>
+        </div>`;
+    }
+
+    function buildSidePanel(anchors) {
+        const list = document.getElementById('anchor-list');
+        document.getElementById('panel-subtitle').textContent =
+            `${anchors.length} anchors active across ${new Set(anchors.map(a => a.properties && a.properties.city).filter(Boolean)).size} cities`;
+
+        list.innerHTML = anchors
+            .sort((a, b) => avgVibe(b.vibe) - avgVibe(a.vibe))
+            .map(anchor => {
+                const avg = avgVibe(anchor.vibe);
+                const color = vibeColor(avg);
+                const city = (anchor.properties && anchor.properties.city) || '';
+                return `<div class="anchor-list-item" onclick="focusAnchor('${anchor.id}')">
+                    <div class="anchor-dot" style="background:${color}"></div>
+                    <div class="anchor-info">
+                        <div class="anchor-item-name">${anchor.name}</div>
+                        <div class="anchor-item-sub">${city} · ${anchor.checkin_count || 0} check-ins</div>
+                    </div>
+                    <div class="anchor-item-vibe" style="color:${color}">${Math.round(avg * 100)}%</div>
+                </div>`;
+            }).join('');
+    }
+
+    function focusAnchor(id) {
+        const anchor = anchorsData.find(a => a.id === id);
+        if (!anchor) return;
+        map.setView([anchor.location.lat, anchor.location.lon], 13, { animate: true });
+        if (markerMap[id]) markerMap[id].openPopup();
+    }
+
+    function togglePanel() {
+        document.getElementById('side-panel').classList.toggle('open');
+    }
+
+    async function loadAnchors() {
+        try {
+            // Fetch all anchors from live API — no hardcoding, auto-updates as network grows
+            const res = await fetch(`${API}/v1/anchors`);
+            if (!res.ok) throw new Error(`API returned ${res.status}`);
+            const anchors = await res.json();
+
+            anchorsData = anchors;
+            document.getElementById('loading').style.display = 'none';
+
+            // Add markers
+            anchors.forEach(anchor => {
+                const marker = createAnchorMarker(anchor);
+                marker.addTo(map);
+                markerMap[anchor.id] = marker;
+            });
+
+            // Update header stats
+            document.getElementById('anchor-count').textContent = anchors.length;
+            buildSidePanel(anchors);
+
+            // Auto-fit map to all anchors
+            if (anchors.length > 0) {
+                const coords = anchors.map(a => [a.location.lat, a.location.lon]);
+                map.fitBounds(L.latLngBounds(coords), { padding: [60, 60], maxZoom: 5 });
+            }
+
+            // Fetch health for total checkin count
+            const health = await fetch(`${API}/health`).then(r => r.json());
+            document.getElementById('checkin-count').textContent = health.total_checkins || '—';
+
+        } catch (err) {
+            document.getElementById('loading').style.display = 'none';
+            const errEl = document.getElementById('error-msg');
+            errEl.textContent = `Could not load anchor network: ${err.message}`;
+            errEl.style.display = 'block';
+            console.error('Vibemap map error:', err);
+        }
+    }
+
+    // Load on start, then refresh every 5 minutes automatically
+    loadAnchors();
+    setInterval(loadAnchors, 5 * 60 * 1000);
+    </script>
+
+</body>
+</html>
