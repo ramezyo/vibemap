@@ -275,7 +275,7 @@ pip install mcp httpx
 python vibemap_mcp.py
 ```
 
-Five tools: `get_vibe`, `checkin`, `list_anchors`, `global_pulse`, `network_health`.
+Six tools: `get_vibe`, `checkin`, `memory`, `list_anchors`, `global_pulse`, `network_health`.
 
 → [Full MCP setup guide](https://github.com/ramezyo/vibemap/blob/master/MCP.md)
 

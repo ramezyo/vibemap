@@ -512,6 +512,62 @@ async def create_anchor(
     )
 
 
+@app.get("/v1/anchors/{anchor_id}/memory")
+@limiter.limit("60/minute")
+async def anchor_memory(
+    request: Request,
+    anchor_id: str,
+    query: Optional[str] = None,
+    source: Optional[str] = None,
+    hours: int = 168,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Query spatial memory for a named anchor without needing to know its coordinates.
+    Shortcut for agents that discover anchors via /v1/anchors and want to read their memory.
+
+    Example: GET /v1/anchors/480dbcb7-38e7-43ec-9078-b224df8bd3f4/memory?query=mural
+    """
+    from sqlalchemy import select
+    from models.models import VibeAnchor as VA
+    import uuid as _uuid
+
+    # Resolve anchor → coordinates
+    try:
+        anchor_uuid = _uuid.UUID(anchor_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid anchor_id — must be a UUID")
+
+    result = await db.execute(select(VA).where(VA.id == anchor_uuid))
+    anchor = result.scalar_one_or_none()
+    if not anchor:
+        raise HTTPException(status_code=404, detail=f"Anchor {anchor_id} not found")
+
+    service = VibeService(db)
+    memories = await service.get_spatial_memory(
+        lat=anchor.lat,
+        lon=anchor.lon,
+        radius_meters=500,
+        query=query,
+        source=source,
+        hours=hours,
+        limit=limit
+    )
+
+    return {
+        "anchor": {
+            "id": str(anchor.id),
+            "name": anchor.name,
+            "location": {"lat": anchor.lat, "lon": anchor.lon}
+        },
+        "query": query,
+        "hours": hours,
+        "total_memories": len(memories),
+        "memories": memories
+    }
+
+
 @app.get("/v1/memory", response_model=SpatialMemoryResponse)
 @limiter.limit("60/minute")
 async def spatial_memory(
