@@ -658,8 +658,10 @@ async def enterprise_status(
     Verify enterprise API key and return account status.
     Use this to confirm your key is working before integrating.
     """
-    service = VibeService(db)
-    stats = await service.get_stats()
+    from sqlalchemy import select, func as sqlfunc
+    from models.models import VibeAnchor as VA, AgentCheckin as AC
+    anchor_count = (await db.execute(select(sqlfunc.count(VA.id)))).scalar() or 0
+    checkin_count = (await db.execute(select(sqlfunc.count(AC.id)))).scalar() or 0
     return {
         "status": "authenticated",
         "tier": "enterprise",
@@ -669,8 +671,8 @@ async def enterprise_status(
             "GET /v1/enterprise/training-data"
         ],
         "network": {
-            "total_anchors": stats["total_anchors"],
-            "total_checkins": stats["total_checkins"]
+            "total_anchors": anchor_count,
+            "total_checkins": checkin_count
         },
         "contact": "yo@vibemap.live"
     }
