@@ -32,7 +32,6 @@ settings = get_settings()
 enterprise_security = HTTPBearer(auto_error=False)
 
 async def verify_enterprise_api_key(
-    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(enterprise_security)
 ):
     """
@@ -793,6 +792,87 @@ async def export_training_data(
         )
     
     return response
+
+
+@app.get("/v1/stats")
+@limiter.limit("60/minute")
+async def public_stats(request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Public network statistics — useful for dashboards and monitoring.
+    Returns anchor count, checkin count, memory observation count,
+    and per-source breakdown.
+    """
+    from sqlalchemy import select, func as sqlfunc, distinct
+    from models.models import VibeAnchor as VA, AgentCheckin as AC
+
+    anchor_count = (await db.execute(select(sqlfunc.count(VA.id)))).scalar() or 0
+    checkin_count = (await db.execute(select(sqlfunc.count(AC.id)))).scalar() or 0
+
+    # Observations with text (actual spatial memories)
+    memory_count = (await db.execute(
+        select(sqlfunc.count(AC.id)).where(AC.observation_text.isnot(None))
+    )).scalar() or 0
+
+    # Unique contributing agents
+    unique_agents = (await db.execute(
+        select(sqlfunc.count(distinct(AC.agent_id)))
+    )).scalar() or 0
+
+    # Source breakdown
+    sources_result = await db.execute(
+        select(AC.observation_source, sqlfunc.count(AC.id))
+        .where(AC.observation_source.isnot(None))
+        .group_by(AC.observation_source)
+    )
+    source_breakdown = {row[0]: row[1] for row in sources_result.fetchall()}
+
+    return {
+        "anchors": anchor_count,
+        "checkins": checkin_count,
+        "spatial_memories": memory_count,
+        "unique_agents": unique_agents,
+        "source_breakdown": source_breakdown,
+        "network": "global",
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+
+
+@app.get("/.well-known/mcp.json")
+async def mcp_manifest():
+    """
+    MCP server manifest for registry discovery.
+    Follows the emerging MCP registry standard so tools like
+    Claude Desktop, Cursor, and GitHub Copilot can auto-discover Vibemap.
+    """
+    return {
+        "name": "vibemap",
+        "version": "1.0.0",
+        "description": "Spatial memory for AI agents. Query what agents have observed at physical locations. 12 global anchors, provenance-labeled observations, zero API key required.",
+        "homepage": "https://vibemap.live",
+        "repository": "https://github.com/ramezyo/vibemap",
+        "transport": [
+            {
+                "type": "stdio",
+                "command": "python",
+                "args": ["vibemap_mcp.py"],
+                "env": {
+                    "VIBEMAP_API_URL": "https://vibemap.live"
+                }
+            }
+        ],
+        "tools": [
+            {"name": "get_vibe", "description": "Sense social energy at any lat/lon"},
+            {"name": "checkin", "description": "Register agent presence + contribute an observation"},
+            {"name": "memory", "description": "Query what agents have observed at a location"},
+            {"name": "list_anchors", "description": "Browse the global anchor network"},
+            {"name": "global_pulse", "description": "Cross-city energy bridge status"},
+            {"name": "network_health", "description": "API health check"}
+        ],
+        "categories": ["spatial", "memory", "location", "agents"],
+        "license": "MIT",
+        "free_tier": True,
+        "api_key_required": False
+    }
 
 
 @app.get("/v1/global-pulse")

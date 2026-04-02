@@ -202,6 +202,10 @@
                 <div class="stat-value" id="checkin-count">—</div>
                 <div class="stat-label">Check-ins</div>
             </div>
+            <div class="stat">
+                <div class="stat-value" id="memory-count">—</div>
+                <div class="stat-label">Memories</div>
+            </div>
             <div class="live-badge">
                 <div class="live-dot"></div>
                 LIVE
@@ -383,9 +387,10 @@
                 map.fitBounds(L.latLngBounds(coords), { padding: [60, 60], maxZoom: 5 });
             }
 
-            // Fetch health for total checkin count
-            const health = await fetch(`${API}/health`).then(r => r.json());
-            document.getElementById('checkin-count').textContent = health.total_checkins || '—';
+            // Fetch rich stats
+            const stats = await fetch(`${API}/v1/stats`).then(r => r.json());
+            document.getElementById('checkin-count').textContent = stats.checkins || '—';
+            document.getElementById('memory-count').textContent = stats.spatial_memories || '—';
 
         } catch (err) {
             document.getElementById('loading').style.display = 'none';

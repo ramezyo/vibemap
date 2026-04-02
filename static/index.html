@@ -625,6 +625,19 @@
         }
         
         // Check API health on load
+        async function fetchNetworkStats() {
+            try {
+                const res = await fetch(`${API_BASE}/v1/stats`);
+                if (res.ok) {
+                    const stats = await res.json();
+                    const el = document.getElementById('network-anchor-count');
+                    if (el) el.textContent = stats.anchors;
+                    const el2 = document.getElementById('network-memory-count');
+                    if (el2) el2.textContent = stats.spatial_memories;
+                }
+            } catch(e) { /* silent */ }
+        }
+
         async function checkApiHealth() {
             console.log('checkApiHealth called');
             try {
@@ -661,17 +674,17 @@
             }
         }
         
-        // Demo data for when API is unavailable
+        // Demo data for when API is unavailable — updated to reflect real network state
         function getDemoData() {
             return {
-                unique_agents: 50,
-                confidence: 0.87,
-                total_checkins: 2847,
+                unique_agents: 15,
+                confidence: 1.0,
+                total_checkins: 194,
                 vibe: {
-                    social: 0.82,
-                    creative: 0.91,
-                    commercial: 0.73,
-                    residential: 0.45
+                    social: 0.96,
+                    creative: 0.96,
+                    commercial: 0.66,
+                    residential: 0.30
                 }
             };
         }
@@ -890,6 +903,7 @@
             setTimeout(() => {
                 console.log('Checking API health...');
                 checkApiHealth();
+        fetchNetworkStats();
                 fetchVibePulse();
             }, 500);
 
