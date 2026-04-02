@@ -32,6 +32,7 @@ settings = get_settings()
 enterprise_security = HTTPBearer(auto_error=False)
 
 async def verify_enterprise_api_key(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(enterprise_security)
 ):
     """
