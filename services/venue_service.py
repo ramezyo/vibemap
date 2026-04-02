@@ -1,57 +1,105 @@
 """
 Venue Pulse Service
-Real-time venue busyness and activity from Google Places API
+Real venue data via OpenStreetMap Overpass API — no API key required.
+
+Why OSM instead of Google Places:
+  - Completely free, no key, no billing account, no rate-limit surprises
+  - Community-maintained, globally comprehensive
+  - Gives us real venue names, types, and density — enough to derive
+    meaningful vibe modifiers without depending on proprietary busyness data
+  - Busyness is inferred from: venue type + density + time-of-day rhythm
+    (this is honest — we label it 'inferred', not 'live')
+
+OSM Overpass API: https://overpass-api.de
+No registration. No key. Throttled at ~10k requests/day per IP (more than enough).
 """
 
-import os
 import httpx
 from typing import Optional, List, Dict
 from datetime import datetime
 from aiocache import cached
-from config import get_settings
 
-settings = get_settings()
+# Overpass API endpoint — public, no auth
+OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
-# Google Places API (New) - requires API key with Places API enabled
-# Get from: https://console.cloud.google.com/apis/library/places-backend.googleapis.com
-GOOGLE_PLACES_API_KEY = settings.google_places_api_key or os.getenv("GOOGLE_PLACES_API_KEY", "")
-GOOGLE_PLACES_BASE_URL = "https://places.googleapis.com/v1"
-
-# Venue types we care about for vibe calculation
-VENUE_TYPES = [
-    "restaurant",
-    "cafe",
-    "bar",
-    "night_club",
-    "art_gallery",
-    "museum",
-    "shopping_mall",
-    "park",
-    "tourist_attraction"
+# OSM amenity tags that map to vibe dimensions
+VENUE_AMENITIES = [
+    "bar", "pub", "nightclub",           # → social + residential↓
+    "restaurant", "cafe", "food_court",   # → social + commercial
+    "arts_centre", "gallery",             # → creative
+    "theatre", "cinema",                  # → creative + social
+    "marketplace", "mall",                # → commercial
+    "park", "playground",                 # → residential + social
+    "coworking_space", "library",         # → creative + commercial
 ]
+
+# How each amenity type modifies vibe dimensions
+VENUE_VIBE_WEIGHTS = {
+    "bar":             {"social": +0.15, "creative": +0.05, "commercial": +0.05, "residential": -0.10},
+    "pub":             {"social": +0.12, "creative": +0.03, "commercial": +0.05, "residential": -0.08},
+    "nightclub":       {"social": +0.20, "creative": +0.10, "commercial": +0.10, "residential": -0.20},
+    "restaurant":      {"social": +0.10, "creative": 0.00,  "commercial": +0.10, "residential": -0.05},
+    "cafe":            {"social": +0.08, "creative": +0.08, "commercial": +0.05, "residential": 0.00},
+    "food_court":      {"social": +0.10, "creative": 0.00,  "commercial": +0.15, "residential": -0.05},
+    "arts_centre":     {"social": +0.05, "creative": +0.20, "commercial": +0.05, "residential": 0.00},
+    "gallery":         {"social": +0.05, "creative": +0.25, "commercial": +0.05, "residential": 0.00},
+    "theatre":         {"social": +0.10, "creative": +0.20, "commercial": +0.05, "residential": 0.00},
+    "cinema":          {"social": +0.10, "creative": +0.10, "commercial": +0.10, "residential": 0.00},
+    "marketplace":     {"social": +0.10, "creative": +0.05, "commercial": +0.20, "residential": -0.05},
+    "mall":            {"social": +0.08, "creative": 0.00,  "commercial": +0.20, "residential": -0.10},
+    "park":            {"social": +0.08, "creative": +0.05, "commercial": 0.00,  "residential": +0.10},
+    "playground":      {"social": +0.05, "creative": 0.00,  "commercial": 0.00,  "residential": +0.15},
+    "coworking_space": {"social": +0.08, "creative": +0.15, "commercial": +0.10, "residential": 0.00},
+    "library":         {"social": +0.02, "creative": +0.15, "commercial": 0.00,  "residential": +0.05},
+}
+
+# Time-of-day activity multipliers — which venue types are active when
+# (honest proxy for busyness without needing proprietary data)
+def _time_of_day_multiplier(amenity: str, hour: int) -> float:
+    """Return 0.0–1.0 activity estimate based on venue type and hour."""
+    if amenity in ("bar", "pub", "nightclub"):
+        if 20 <= hour or hour < 2:   return 1.0
+        if 17 <= hour < 20:          return 0.6
+        if 12 <= hour < 17:          return 0.2
+        return 0.05
+    if amenity in ("restaurant", "food_court"):
+        if 12 <= hour <= 14:         return 1.0   # lunch
+        if 18 <= hour <= 21:         return 1.0   # dinner
+        if 7 <= hour < 12:           return 0.4   # breakfast
+        if 14 < hour < 18:           return 0.3
+        return 0.05
+    if amenity in ("cafe", "coworking_space", "library"):
+        if 8 <= hour <= 17:          return 0.8
+        if 17 < hour <= 20:          return 0.5
+        return 0.1
+    if amenity in ("arts_centre", "gallery", "theatre", "cinema"):
+        if 10 <= hour <= 20:         return 0.7
+        if 20 < hour <= 22:          return 0.9   # evening shows
+        return 0.1
+    if amenity in ("marketplace", "mall"):
+        if 10 <= hour <= 20:         return 0.8
+        return 0.1
+    if amenity in ("park", "playground"):
+        if 7 <= hour <= 19:          return 0.7
+        return 0.1
+    return 0.3
 
 
 class VenuePulseService:
     """
-    Real-time venue activity monitoring via Google Places API.
-    
-    Tracks live busyness, popularity, and activity at venues
-    to modulate commercial and social energy.
+    Real venue data from OpenStreetMap — zero API key, globally available.
+
+    What's real:    venue names, types, locations, density
+    What's inferred: activity level (from type + time-of-day rhythm)
+    What's not here: live busyness (requires proprietary mobile data — Google etc.)
+
+    This is labeled honestly in every response: source='osm', activity='inferred'.
     """
-    
+
     def __init__(self):
-        self.api_key = GOOGLE_PLACES_API_KEY
         self.client = httpx.AsyncClient(timeout=15.0)
-    
-    def _get_headers(self) -> Dict[str, str]:
-        """Get Google Places API headers."""
-        headers = {
-            "Content-Type": "application/json",
-            "X-Goog-Api-Key": self.api_key
-        }
-        return headers
-    
-    @cached(ttl=300)  # Cache for 5 minutes
+
+    @cached(ttl=600)  # Cache 10 minutes — OSM data doesn't change fast
     async def search_nearby_venues(
         self,
         lat: float,
@@ -60,311 +108,168 @@ class VenuePulseService:
         venue_type: Optional[str] = None
     ) -> List[Dict]:
         """
-        Search for venues near a location.
-        
-        Returns list of venues with current busyness data.
+        Query OSM for venues near lat/lon within radius (metres).
+        Falls back to empty list on network error — never crashes the caller.
         """
-        if not self.api_key:
-            # Return simulated venues if no API key
-            return self._simulate_venues(lat, lon, venue_type)
-        
+        amenity_filter = f'["amenity"="{venue_type}"]' if venue_type else \
+            '["amenity"~"' + "|".join(VENUE_AMENITIES) + '"]'
+
+        query = f"""
+[out:json][timeout:10];
+(
+  node{amenity_filter}(around:{radius},{lat},{lon});
+  way{amenity_filter}(around:{radius},{lat},{lon});
+);
+out center 30;
+"""
         try:
-            # Use Google Places API (New) - Nearby Search
-            field_mask = "places.id,places.displayName,places.location,places.currentOpeningHours,places.businessStatus,places.priceLevel,places.rating,places.userRatingCount"
-            
             response = await self.client.post(
-                f"{GOOGLE_PLACES_BASE_URL}/places:searchNearby",
-                headers={
-                    **self._get_headers(),
-                    "X-Goog-FieldMask": field_mask
-                },
-                json={
-                    "locationRestriction": {
-                        "circle": {
-                            "center": {
-                                "latitude": lat,
-                                "longitude": lon
-                            },
-                            "radius": radius
-                        }
-                    },
-                    "includedTypes": [venue_type] if venue_type else VENUE_TYPES,
-                    "maxResultCount": 20
-                }
+                OVERPASS_URL,
+                data={"data": query},
+                timeout=12.0
             )
+            if response.status_code == 429:
+                # Rate limited — return empty, cache will protect us going forward
+                print("⚠️ Overpass API rate limited — venue data skipped this cycle")
+                return []
             response.raise_for_status()
             data = response.json()
-            
-            venues = []
-            for place in data.get("places", []):
-                venue = self._parse_place(place)
-                if venue:
-                    venues.append(venue)
-            
-            return venues
-            
+            return self._parse_osm_response(data, lat, lon)
+
         except Exception as e:
-            print(f"⚠️ Google Places API error: {e}")
-            return self._simulate_venues(lat, lon, venue_type)
-    
-    def _parse_place(self, place: Dict) -> Optional[Dict]:
-        """Parse Google Place into our venue format."""
-        try:
-            location = place.get("location", {})
-            
-            # Check if currently open
-            hours = place.get("currentOpeningHours", {})
-            is_open = hours.get("openNow", False)
-            
-            # Calculate busyness (simulated if not available)
-            # Google doesn't expose live busyness in the new API without
-            # specific place details call, so we estimate from rating/reviews
-            rating = place.get("rating", 3.0)
-            review_count = place.get("userRatingCount", 0)
-            
-            # Estimate busyness: high rating + many reviews = likely busy
-            busyness_score = min(1.0, (rating / 5.0) * 0.5 + min(review_count / 1000, 0.5))
-            
-            # Adjust for open status
-            if not is_open:
-                busyness_score *= 0.1
-            
-            return {
-                "id": place.get("id"),
-                "name": place.get("displayName", {}).get("text", "Unknown"),
-                "lat": location.get("latitude"),
-                "lon": location.get("longitude"),
-                "type": place.get("primaryType", "establishment"),
-                "rating": rating,
-                "review_count": review_count,
-                "is_open": is_open,
-                "busyness_score": round(busyness_score, 3),
-                "price_level": place.get("priceLevel", "PRICE_LEVEL_UNSPECIFIED"),
-                "timestamp": datetime.utcnow().isoformat(),
-                "source": "google_places"
-            }
-        except Exception as e:
-            print(f"Error parsing place: {e}")
-            return None
-    
-    def _simulate_venues(self, lat: float, lon: float, venue_type: Optional[str]) -> List[Dict]:
-        """Simulate venue data based on location."""
-        import random
-        
-        # Determine location context
-        if 25.0 < lat < 26.0 and -81.0 < lon < -80.0:
-            location_name = "Wynwood"
-            venue_names = [
-                ("Panther Coffee", "cafe"),
-                ("Wynwood Walls", "art_gallery"),
-                ("Coyo Taco", "restaurant"),
-                ("Shots Miami", "bar"),
-                ("The LAB Miami", "cafe"),
-                ("Joey's Italian", "restaurant"),
-                ("Gramps", "bar"),
-                ("Wynwood Kitchen", "restaurant")
-            ]
-        elif 37.0 < lat < 38.0 and 126.0 < lon < 128.0:
-            location_name = "Seoul"
-            venue_names = [
-                ("Myeongdong Kyoja", "restaurant"),
-                ("Line Friends Store", "shopping_mall"),
-                ("Starfield Library", "tourist_attraction"),
-                ("Common Ground", "shopping_mall"),
-                ("BHC Chicken", "restaurant"),
-                ("Cafe Onion", "cafe"),
-                ("Hongdae Playground", "park"),
-                ("Gangnam Underground", "shopping_mall")
-            ]
-        else:
-            location_name = "Unknown"
-            venue_names = [
-                ("Local Cafe", "cafe"),
-                ("Downtown Bistro", "restaurant"),
-                ("City Park", "park"),
-                ("Main Street Bar", "bar")
-            ]
-        
-        venues = []
+            print(f"⚠️ Overpass API error: {e} — returning empty venue list")
+            return []
+
+    def _parse_osm_response(self, data: Dict, origin_lat: float, origin_lon: float) -> List[Dict]:
+        """Parse OSM elements into our venue format."""
         hour = datetime.utcnow().hour
-        
-        # Business varies by time of day
-        if 11 <= hour <= 14 or 18 <= hour <= 22:  # Lunch/Dinner rush
-            base_busyness = 0.7
-        elif 6 <= hour <= 23:  # Daytime
-            base_busyness = 0.5
-        else:  # Late night
-            base_busyness = 0.2
-        
-        for i, (name, vtype) in enumerate(venue_names):
-            if venue_type and vtype != venue_type:
+        venues = []
+
+        for element in data.get("elements", []):
+            tags = element.get("tags", {})
+            amenity = tags.get("amenity", "")
+            if not amenity:
                 continue
-                
-            # Add some variance
-            busyness = min(1.0, max(0.0, base_busyness + random.uniform(-0.2, 0.2)))
-            
+
+            name = tags.get("name") or tags.get("name:en") or amenity.replace("_", " ").title()
+
+            # Get lat/lon: nodes have it directly, ways have a center
+            if element["type"] == "node":
+                vlat = element.get("lat", origin_lat)
+                vlon = element.get("lon", origin_lon)
+            else:
+                center = element.get("center", {})
+                vlat = center.get("lat", origin_lat)
+                vlon = center.get("lon", origin_lon)
+
+            activity = _time_of_day_multiplier(amenity, hour)
+
             venues.append({
-                "id": f"sim-{location_name.lower()}-{i}",
+                "id": f"osm-{element['type']}-{element['id']}",
                 "name": name,
-                "lat": lat + random.uniform(-0.002, 0.002),
-                "lon": lon + random.uniform(-0.002, 0.002),
-                "type": vtype,
-                "rating": round(random.uniform(3.5, 4.8), 1),
-                "review_count": random.randint(100, 5000),
-                "is_open": 6 <= hour <= 23 or vtype in ["bar", "night_club"],
-                "busyness_score": round(busyness, 3),
-                "price_level": random.choice(["PRICE_LEVEL_INEXPENSIVE", "PRICE_LEVEL_MODERATE", "PRICE_LEVEL_EXPENSIVE"]),
+                "lat": vlat,
+                "lon": vlon,
+                "amenity": amenity,
+                "cuisine": tags.get("cuisine"),
+                "opening_hours": tags.get("opening_hours"),
+                "activity_level": round(activity, 2),
+                "source": "openstreetmap",
+                "activity_basis": "time_of_day_inferred",
                 "timestamp": datetime.utcnow().isoformat(),
-                "source": "simulated",
-                "note": "Set GOOGLE_PLACES_API_KEY for real data"
             })
-        
+
         return venues
-    
+
     def calculate_vibe_modifiers(self, venues: List[Dict]) -> Dict[str, float]:
         """
-        Calculate vibe energy modifiers based on venue activity.
-        
-        Returns multipliers for each vibe dimension.
+        Derive vibe dimension modifiers from real OSM venue data.
+
+        Logic:
+          - Each venue type has known vibe weights (see VENUE_VIBE_WEIGHTS)
+          - Each venue's contribution is scaled by its time-of-day activity level
+          - Contributions are capped so a single dense district doesn't
+            push modifiers to extremes
         """
+        modifiers = {"social": 0.0, "creative": 0.0, "commercial": 0.0, "residential": 0.0}
+
         if not venues:
             return {"social": 1.0, "creative": 1.0, "commercial": 1.0, "residential": 1.0}
-        
-        # Calculate average busyness
-        avg_busyness = sum(v.get("busyness_score", 0) for v in venues) / len(venues)
-        
-        # Count open venues
-        open_count = sum(1 for v in venues if v.get("is_open", False))
-        open_ratio = open_count / len(venues) if venues else 0
-        
-        # Count venue types
-        type_counts = {}
-        for v in venues:
-            vtype = v.get("type", "other")
-            type_counts[vtype] = type_counts.get(vtype, 0) + 1
-        
-        # Base modifiers
-        modifiers = {
-            "social": 1.0,
-            "creative": 1.0,
-            "commercial": 1.0,
-            "residential": 1.0
-        }
-        
-        # Commercial energy from overall busyness
-        modifiers["commercial"] += (avg_busyness - 0.5) * 0.3
-        
-        # Social energy from restaurants/bars
-        food_venues = type_counts.get("restaurant", 0) + type_counts.get("bar", 0) + type_counts.get("cafe", 0)
-        if food_venues > 0:
-            modifiers["social"] += min(0.2, food_venues * 0.05)
-        
-        # Creative energy from galleries/museums
-        creative_venues = type_counts.get("art_gallery", 0) + type_counts.get("museum", 0)
-        if creative_venues > 0:
-            modifiers["creative"] += min(0.2, creative_venues * 0.1)
-        
-        # Residential decreases with high commercial activity
-        if avg_busyness > 0.7:
-            modifiers["residential"] -= 0.15
-        
-        # Late night venues affect residential
-        night_venues = type_counts.get("bar", 0) + type_counts.get("night_club", 0)
-        if night_venues > 2:
-            modifiers["residential"] -= 0.1
-        
-        # Ensure bounds
-        for key in modifiers:
-            modifiers[key] = max(0.5, min(1.5, modifiers[key]))
-        
-        return modifiers
-    
-    def get_venue_observation(self, venues: List[Dict], persona: str) -> str:
+
+        for venue in venues:
+            amenity = venue.get("amenity", "")
+            activity = venue.get("activity_level", 0.5)
+            weights = VENUE_VIBE_WEIGHTS.get(amenity, {})
+            for dim, w in weights.items():
+                modifiers[dim] += w * activity
+
+        # Normalise: cap contribution so 20 cafes don't make social = 3.0
+        # Apply as additive modifier on base 1.0, clamped to [0.6, 1.5]
+        result = {}
+        for dim, delta in modifiers.items():
+            capped = max(-0.4, min(0.5, delta))   # max ±40–50% swing
+            result[dim] = round(1.0 + capped, 3)
+
+        return result
+
+    def get_venue_summary(self, venues: List[Dict]) -> Dict:
         """
-        Get venue-based observation for an agent persona.
+        Return a human-readable summary for API responses and memory observations.
         """
         if not venues:
-            return "Quiet streets today"
-        
-        # Find busiest venue
-        busiest = max(venues, key=lambda v: v.get("busyness_score", 0))
-        venue_name = busiest.get("name", "somewhere")
-        venue_type = busiest.get("type", "place")
-        
-        # Find open food venues
-        food_venues = [v for v in venues if v.get("is_open") and v.get("type") in ["restaurant", "cafe"]]
-        
-        observations = {
-            "Street Artist": [
-                f"Crowds gathering near {venue_name} for inspiration",
-                "The foot traffic today is perfect for people-watching",
-                f"The energy around {venue_name} is electric"
-            ],
-            "Tech Hustler": [
-                f"{venue_name} is packed, great for networking",
-                "Every cafe has laptops and entrepreneurs",
-                f"The crowd at {venue_name} looks like potential clients"
-            ],
-            "Zen Seeker": [
-                "Finding quiet spots away from the busy venues",
-                f"Avoiding {venue_name}, too crowded for my taste",
-                "The side streets are peaceful despite the main areas"
-            ],
-            "Night Owl": [
-                f"{venue_name} is where the night begins",
-                "The bars are filling up nicely",
-                f"Good crowd building at {venue_name}"
-            ],
-            "Flâneur": [
-                f"Observing the dance of people at {venue_name}",
-                "Every venue tells a different story today",
-                f"The atmosphere at {venue_name} is fascinating"
-            ],
-            "Foodie": [
-                f"{venue_name} has a line out the door",
-                f"Tried a new spot near {venue_name}",
-                "The restaurant scene is buzzing today"
-            ],
-            "Local": [
-                f"{venue_name} is busier than usual",
-                "The neighborhood rhythm feels different today",
-                f"Everyone's talking about {venue_name}"
-            ],
-            "K-Pop Scout": [
-                f"Spotted potential talent near {venue_name}",
-                "The shopping district is full of stylish people",
-                f"Good people-watching at {venue_name}"
-            ],
-            "Night-Market Vendor": [
-                "Competition is fierce today",
-                f"The crowds near {venue_name} are promising",
-                "Good sales day so far"
-            ],
-            "High-Speed Commuter": [
-                f"Taking a shortcut past {venue_name}",
-                "The main streets are crowded, using back routes",
-                f"{venue_name} is causing foot traffic jams"
-            ],
-            "Esports Strategist": [
-                f"PC rooms near {venue_name} are full",
-                "Gaming cafes are buzzing with competition",
-                f"The energy at {venue_name} is competitive"
-            ]
+            return {
+                "total": 0,
+                "breakdown": {},
+                "most_active": None,
+                "source": "openstreetmap",
+                "note": "No OSM venues found in radius"
+            }
+
+        breakdown: Dict[str, int] = {}
+        for v in venues:
+            a = v.get("amenity", "other")
+            breakdown[a] = breakdown.get(a, 0) + 1
+
+        most_active = max(venues, key=lambda v: v.get("activity_level", 0))
+
+        return {
+            "total": len(venues),
+            "breakdown": breakdown,
+            "most_active": {
+                "name": most_active["name"],
+                "amenity": most_active.get("amenity"),
+                "activity_level": most_active.get("activity_level"),
+            },
+            "source": "openstreetmap",
+            "activity_basis": "time_of_day_inferred",
         }
-        
-        if persona in observations:
-            import random
-            return random.choice(observations[persona])
-        
-        return f"Noticing activity around {venue_name}"
+
+    def get_venue_observation(self, venues: List[Dict], persona: str) -> str:
+        """Natural-language observation for a given agent persona."""
+        if not venues:
+            return "Quiet streets — not many venues in this radius."
+
+        most_active = max(venues, key=lambda v: v.get("activity_level", 0))
+        name = most_active.get("name", "a local spot")
+        amenity = most_active.get("amenity", "venue")
+
+        templates = {
+            "Street Artist":    [f"Good crowds around {name} — people in the right headspace for art.", f"The foot traffic near {name} is inspiring today."],
+            "Tech Hustler":     [f"{name} is packed, good energy for conversations.", "Every table has a laptop open."],
+            "Zen Seeker":       [f"Sidestepping the {amenity} crowd, looking for quieter pockets.", "The side streets are calmer than the main strip."],
+            "Night Owl":        [f"{name} is where the night is building.", f"Early crowd at {name}, will peak in a few hours."],
+            "Flâneur":          [f"Watching the rhythm of people flowing in and out of {name}.", f"The {amenity} scene here has a particular character."],
+            "Local":            [f"{name} is busier than usual tonight.", f"The neighborhood energy shifted around {name}."],
+        }
+
+        import random
+        options = templates.get(persona, [f"Active scene around {name}.", f"The {amenity} strip is drawing a crowd."])
+        return random.choice(options)
 
 
-# Global venue service instance
+# Singleton
 _venue_service: Optional[VenuePulseService] = None
 
-
 def get_venue_service() -> VenuePulseService:
-    """Get or create venue service singleton."""
     global _venue_service
     if _venue_service is None:
         _venue_service = VenuePulseService()

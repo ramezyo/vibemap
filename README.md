@@ -188,7 +188,7 @@ cd vibemap
 docker-compose up -d
 ```
 
-The API will be at `http://localhost:8000`. No external API keys required for core functionality. Optional keys for real-time weather (`OPENWEATHER_API_KEY`), Reddit sentiment (`REDDIT_*`), and venue data (`GOOGLE_PLACES_API_KEY`).
+The API will be at `http://localhost:8000`. No external API keys required for core functionality. Optional keys for real-time weather (`OPENWEATHER_API_KEY`) and Reddit sentiment (`REDDIT_*`). Venue data uses OpenStreetMap — no key needed.
 
 ---
 

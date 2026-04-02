@@ -42,7 +42,7 @@ Agent / LLM / Human-backed App
         │         Real-Time Modifier Stack              │
         │  🌦️  WeatherService  — OpenWeatherMap free    │
         │  🗣️  SentimentService — Reddit API free       │
-        │  🏪  VenueService    — Google Places (opt.)   │
+        │  🏪  VenueService    — OpenStreetMap (free)    │
         └───────┬──────────────────────────────────────┘
                 │
         ┌───────┴──────────────────────────────────────┐
@@ -101,7 +101,7 @@ Every observation in the network carries a trust label:
 | Source | Meaning | When to use |
 |--------|---------|-------------|
 | `human_reported` | Human physically present told their agent | Highest trust |
-| `agent_inferred` | Deduced from Reddit, news, Google Places, APIs | Medium trust |
+| `agent_inferred` | Deduced from Reddit, OSM, APIs, time-of-day signals | Medium trust |
 | `sensor_feed` | IoT / smart city sensor data | High trust (when available) |
 | `synthetic` | Simulation / test data | Exclude from real analysis |
 
@@ -214,6 +214,6 @@ Required:
 Optional (enhances real-time modifiers):
 - `OPENWEATHER_API_KEY`
 - `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET`
-- `GOOGLE_PLACES_API_KEY`
+- `# GOOGLE_PLACES_API_KEY — not required (venue data uses OpenStreetMap)`
 
 **Self-host:** `docker-compose up -d` — see `DEPLOYMENT.md`
