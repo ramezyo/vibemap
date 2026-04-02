@@ -253,7 +253,14 @@
         return ((vibe.social + vibe.creative + vibe.commercial + vibe.residential) / 4);
     }
 
-    // Init map with dark OpenStreetMap tiles
+    // Init map — explicit pixel height so Leaflet never gets a 0px container
+    const mapEl = document.getElementById('map');
+    mapEl.style.height = (window.innerHeight - 62) + 'px';
+    window.addEventListener('resize', () => {
+        mapEl.style.height = (window.innerHeight - 62) + 'px';
+        map.invalidateSize();
+    });
+
     const map = L.map('map', {
         center: [20, 10],
         zoom: 2,
@@ -275,24 +282,30 @@
         const avg = avgVibe(vibe);
         const color = vibeColor(avg);
 
-        const icon = L.divIcon({
-            className: '',
-            html: `<div class="anchor-marker">
-                     <div class="anchor-ring" style="background:${color};"></div>
-                     <div class="anchor-core" style="background:${color};"></div>
-                   </div>`,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
-            popupAnchor: [0, -14],
+        // Use CircleMarker — rock-solid cross-browser, no CSS dependency issues
+        const marker = L.circleMarker([anchor.location.lat, anchor.location.lon], {
+            radius: 10,
+            fillColor: color,
+            color: 'rgba(255,255,255,0.8)',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9,
         });
 
-        const marker = L.marker([anchor.location.lat, anchor.location.lon], { icon });
-
-        marker.bindPopup(buildPopup(anchor, avg, color), {
-            maxWidth: 300,
-            className: 'vibemap-popup',
+        // Pulse effect via a second invisible circle
+        const pulse = L.circleMarker([anchor.location.lat, anchor.location.lon], {
+            radius: 18,
+            fillColor: color,
+            color: color,
+            weight: 1,
+            opacity: 0.3,
+            fillOpacity: 0.1,
         });
 
+        marker.bindPopup(buildPopup(anchor, avg, color), { maxWidth: 300 });
+
+        // Store pulse alongside marker for adding to map
+        marker._pulse = pulse;
         return marker;
     }
 
@@ -370,12 +383,15 @@
             anchorsData = anchors;
             document.getElementById('loading').style.display = 'none';
 
-            // Add markers
+            // Add markers — pulse ring first (below), then main dot on top
             anchors.forEach(anchor => {
                 const marker = createAnchorMarker(anchor);
+                if (marker._pulse) marker._pulse.addTo(map);
                 marker.addTo(map);
                 markerMap[anchor.id] = marker;
             });
+            // Force map to recalculate size after markers added
+            map.invalidateSize();
 
             // Update header stats
             document.getElementById('anchor-count').textContent = anchors.length;
