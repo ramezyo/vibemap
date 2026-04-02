@@ -546,11 +546,10 @@ async def anchor_memory(
 
     service = VibeService(db)
     memories = await service.get_spatial_memory(
-        lat=anchor.lat,
-        lon=anchor.lon,
+        location=GeoPoint(lat=anchor.lat, lon=anchor.lon),
         radius_meters=500,
         query=query,
-        source=source,
+        sources=[source] if source else None,
         hours=hours,
         limit=limit
     )
