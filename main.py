@@ -517,8 +517,8 @@ async def create_anchor(
 async def anchor_memory(
     request: Request,
     anchor_id: str,
-    query: Optional[str] = None,
-    source: Optional[str] = None,
+    query: str = None,
+    source: str = None,
     hours: int = 168,
     limit: int = 20,
     db: AsyncSession = Depends(get_db)
