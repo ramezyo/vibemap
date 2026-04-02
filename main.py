@@ -633,15 +633,9 @@ async def spatial_memory(
 
 @app.get("/v1/enterprise/status")
 @limiter.limit("30/minute")
-async def enterprise_status(
-    request: Request,
-    _api_key: str = Depends(verify_enterprise_api_key),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Verify enterprise API key and return account status.
-    Use this to confirm your key is working before integrating.
-    """
+async def enterprise_status(request: Request, db: AsyncSession = Depends(get_db)):
+    """Verify enterprise API key and return account status."""
+    verify_enterprise_api_key(request)  # raises 401/403/503 on failure
     from sqlalchemy import select, func as sqlfunc
     from models.models import VibeAnchor as VA, AgentCheckin as AC
     anchor_count = (await db.execute(select(sqlfunc.count(VA.id)))).scalar() or 0
@@ -654,10 +648,7 @@ async def enterprise_status(
             "GET /v1/enterprise/predictive-clusters",
             "GET /v1/enterprise/training-data"
         ],
-        "network": {
-            "total_anchors": anchor_count,
-            "total_checkins": checkin_count
-        },
+        "network": {"total_anchors": anchor_count, "total_checkins": checkin_count},
         "contact": "yo@vibemap.live"
     }
 
@@ -666,13 +657,13 @@ async def enterprise_status(
 @limiter.limit("20/minute")
 async def predictive_clusters(
     request: Request,
-    _api_key: str = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 2000,
     hours: int = 4,
     db: AsyncSession = Depends(get_db)
 ):
+    verify_enterprise_api_key(request)
     """
     Enterprise Endpoint: Predict High-Energy Social Cluster Formation.
     
@@ -708,7 +699,6 @@ async def predictive_clusters(
 @limiter.limit("10/minute")
 async def export_training_data(
     request: Request,
-    _api_key: str = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 5000,
