@@ -32,37 +32,26 @@ settings = get_settings()
 enterprise_security = HTTPBearer(auto_error=False)
 
 async def verify_enterprise_api_key(
-    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(enterprise_security)
 ):
-    """
-    Verify enterprise API key for protected endpoints.
-    - 503 if key not configured server-side (not deployed yet)
-    - 401 if no credentials provided
-    - 403 if credentials are wrong (timing-safe comparison)
-    """
+    """Verify enterprise API key. Returns 503 if unconfigured, 401 if missing, 403 if wrong."""
     if not settings.enterprise_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Enterprise API not configured. Contact yo@vibemap.live"
         )
-
     if not credentials or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key required. Include 'Authorization: Bearer YOUR_API_KEY' header.",
             headers={"WWW-Authenticate": "Bearer"}
         )
-
-    # Timing-safe comparison — prevents timing oracle attacks
-    provided = credentials.credentials.encode("utf-8")
-    expected = settings.enterprise_api_key.encode("utf-8")
-    if not hmac.compare_digest(provided, expected):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid API key."
-        )
-
+    # Timing-safe comparison prevents timing oracle attacks
+    if not hmac.compare_digest(
+        credentials.credentials.encode("utf-8"),
+        settings.enterprise_api_key.encode("utf-8")
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid API key.")
     return credentials
 
 # Get the directory containing this file
