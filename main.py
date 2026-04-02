@@ -25,34 +25,34 @@ from services.vibe_service import VibeService
 settings = get_settings()
 
 # ── Enterprise API Key Security ───────────────────────────────────────────────
-# Uses timing-safe comparison (hmac.compare_digest) to prevent timing attacks.
-# Key must be set via ENTERPRISE_API_KEY environment variable on Railway.
-# Clients pass: Authorization: Bearer <key>
+# Manual header parsing — avoids HTTPBearer dependency injection issues with slowapi.
+# Timing-safe comparison (hmac.compare_digest) to prevent timing attacks.
 
-enterprise_security = HTTPBearer(auto_error=False)
-
-async def verify_enterprise_api_key(
-    credentials: HTTPAuthorizationCredentials = Depends(enterprise_security)
-):
-    """Verify enterprise API key. Returns 503 if unconfigured, 401 if missing, 403 if wrong."""
+def verify_enterprise_api_key(request: Request) -> str:
+    """
+    Verify enterprise API key from Authorization: Bearer header.
+    Returns the key string on success.
+    Raises 503 if unconfigured, 401 if missing, 403 if wrong.
+    """
     if not settings.enterprise_api_key:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Enterprise API not configured. Contact yo@vibemap.live"
         )
-    if not credentials or not credentials.credentials:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key required. Include 'Authorization: Bearer YOUR_API_KEY' header.",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    # Timing-safe comparison prevents timing oracle attacks
+    provided = auth_header[7:]  # strip "Bearer "
     if not hmac.compare_digest(
-        credentials.credentials.encode("utf-8"),
+        provided.encode("utf-8"),
         settings.enterprise_api_key.encode("utf-8")
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid API key.")
-    return credentials
+    return provided
 
 # Get the directory containing this file
 BASE_DIR = Path(__file__).parent
@@ -635,7 +635,7 @@ async def spatial_memory(
 @limiter.limit("30/minute")
 async def enterprise_status(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
+    _api_key: str = Depends(verify_enterprise_api_key),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -666,7 +666,7 @@ async def enterprise_status(
 @limiter.limit("20/minute")
 async def predictive_clusters(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
+    _api_key: str = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 2000,
@@ -708,7 +708,7 @@ async def predictive_clusters(
 @limiter.limit("10/minute")
 async def export_training_data(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(verify_enterprise_api_key),
+    _api_key: str = Depends(verify_enterprise_api_key),
     lat: float = 25.7997,
     lon: float = -80.1986,
     radius: float = 5000,
